@@ -33,7 +33,7 @@ services:
 
 networks:
   mybridge:
-    driver: bridge
+#    driver: bridge
     external: true
 
 #volumes:
