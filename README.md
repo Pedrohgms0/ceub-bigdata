@@ -13,7 +13,7 @@ Ao longo do curso, exploraremos conceitos, infraestrutura e aplicações de Big 
 | [03](https://www.kaggle.com/code/ganu1899/mongodb-with-python)                       | Consulta e tratamento de dados em ambiente de ciência de dados           | 29/08/2025 |
 | [04](./jupyter/#4-limpeza-preparação-e-importação-de-dados-reais)                    | Pipeline de ingestão, limpeza e análise exploratória de dados reais      | 12/09/2025 |
 | [05](./cassandra/)                                                                   | Modelagem e consulta eficiente em bases distribuídas                     | 26/09/2025 |
-| [06](./minio/)                                                                       | Uso de armazenamento de objetos para organizar e persistir grandes dados | 03/10/2025 |
+| [06](./minio/)                                                                       | Uso de armazenamento de objetos para organizar e persistir Datalakes     | 03/10/2025 |
 | [07](./spark/)                                                                       | Processamento distribuído em larga escala com PySpark                    | 10/10/2025 |
 <!--
 | 06 | [Redis](./redis/)                                                                    | Prática com Banco de Dados Chave-Valor                     | 02/04/2025 |
