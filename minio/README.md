@@ -20,6 +20,26 @@ Paralelamente, fora do Hadoop, emergiram soluções como o GlusterFS, que buscav
 
 Na sequência, destaca-se o Ceph, um dos sistemas distribuídos mais robustos, projetado sob a arquitetura de Object Storage Devices (OSDs). O Ceph fornece uma tríade de interfaces: RADOS (object storage nativo), CephFS (POSIX file system distribuído) e RBD (block device), permitindo unificação de bloco, arquivo e objeto em uma mesma plataforma distribuída e escalável (scale-out). Sua resiliência decorre do uso do algoritmo CRUSH, que elimina a necessidade de um servidor central de metadados para mapear onde os objetos estão, distribuindo de forma determinística os dados entre os nós. Essa abordagem tornou o Ceph referência em ambientes de nuvem privada (ex.: OpenStack) e clusters científicos, aproximando-se mais do paradigma atual de object storage voltado a Data Lakes.
 
+```mermaid
+timeline
+title Evolução do Armazenamento de Dados
+1980s : DAS (Direct Attached Storage)
+1990s : SAN (Storage Area Network), NAS (Network Attached Storage)
+2000s : HDFS (Hadoop Distributed File System), GlusterFS
+2010s : Ceph (RADOS, RBD, CephFS), AWS S3 e Object Storage distribuído
+2020s : Data Lakehouse (Delta Lake, Apache Iceberg, Apache Hudi)
+```
+
+### Comparação: HDFS vs Object Storage
+
+| Critério        | HDFS (Hadoop)                              | Object Storage (S3/MinIO)                           |
+|-----------------|---------------------------------------------|-----------------------------------------------------|
+| Modelo de acesso| File System distribuído (POSIX-like)        | API HTTP/REST (S3, compatível com nuvem)            |
+| Unidade de dados| Arquivo dividido em blocos (128–256 MB)     | Objeto (conteúdo + ID + metadados + atributos)      |
+| Otimização      | Leituras sequenciais em lote (batch)        | Acesso direto, paralelo e massivo via HTTP          |
+| Integração      | Ecossistema Hadoop / MapReduce              | Spark, Flink, Airflow, AI/ML frameworks             |
+| Limitações      | Sobrecarga para arquivos pequenos, acoplado | Sem hierarquia, mas escalável e cloud-native        |
+
 Essas soluções pavimentaram a transição para o armazenamento de objetos exposto via HTTP e APIs RESTful (como S3), que abandonam de vez as interfaces POSIX tradicionais para priorizar escalabilidade, simplicidade de endereçamento e integração direta com aplicações distribuídas.
 
 ## 3. Modelos de Armazenamento
@@ -31,6 +51,14 @@ Como vimos na seção anterior, ao longo da evolução das arquiteturas de TI, c
 - **Armazenamento de Arquivos**: Oferecido por servidores ou appliances especializados (NAS – Network Attached Storage), que expõem hierarquias de diretórios via rede utilizando protocolos como NFS (Unix/Linux) e SMB/CIFS (Windows). A coordenação do acesso concorrente é feita pelo próprio servidor, que enxerga seus volumes em nível de bloco e os disponibiliza em forma de arquivos. Essa abordagem favorece colaboração e compartilhamento, mas sofre limitações de desempenho quando o número de arquivos ou operações de metadados (criação, listagem, renomeação) cresce para milhões. Em cargas analíticas modernas, a estrutura hierárquica e a pressão em metadados reduzem a eficiência em comparação ao armazenamento de objetos. Por isso, em Big Data, prevalecem formatos colunares otimizados para leitura analítica massiva.
 
 - **Armazenamento de Objetos**: Evolução natural para lidar com a explosão de dados não estruturados. Cada item é tratado como objeto independente, composto por identificador único (ID), atributos e metadados enriquecíveis, além do conteúdo binário. Ao invés de expor sistemas de arquivos ou volumes, os objetos residem em repositórios acessíveis por APIs (ex.: REST, S3), eliminando a hierarquia tradicional de diretórios. Essa simplicidade de endereçamento (buckets com chave única) favorece escalabilidade horizontal massiva, interoperabilidade entre plataformas e governança granular (retenção, imutabilidade). Por isso, tornou-se a base tecnológica de Data Lakes e do ecossistema moderno de Big Data, AI/ML, Analytics e aplicações cloud-native.
+## Tabela — Block vs File vs Object
+
+| Critério   | Bloco (SAN/iSCSI)       | Arquivo (NFS/SMB)         | Objeto (S3/MinIO)                     |
+|------------|-------------------------|---------------------------|---------------------------------------|
+| Estrutura  | Blocos fixos            | Hierarquia de pastas      | Objeto + metadados + ID               |
+| Acesso     | Driver/FS local         | FS de rede                | HTTP/REST (S3)                        |
+| Uso típico | DB/VM alta IOPS         | Colaboração simples       | Data Lake / ML / Backup / Logs        |
+| Escala     | Limitada                | Limitada                  | Scale-out elástico                    |
 
 ### Principais Vantagens e Características
 
@@ -112,14 +140,7 @@ No estágio mais avançado, Data Lakes modernos incorporam Delta Lake, Iceberg, 
 
 ## 5. Prática com MinIO
 
-**MinIO** é uma solução de armazenamento de objetos de alto desempenho compatível com a API do Amazon S3 (Simple Storage Service), um serviço de armazenamento de objetos da Amazon Web Services (AWS), projetado para armazenar e recuperar qualquer quantidade de dados de qualquer lugar na Internet, cujos principais conceitos estão listados a seguir: 
-
-- **Buckets**: Contêineres onde os objetos são armazenados.
-- **Objetos**: Unidades de dados que são armazenadas nos buckets.
-- **Chaves**: Identificadores únicos para cada objeto dentro de um bucket.
-- **Metadados**: Informações adicionais armazenadas com cada objeto.
-
-Cada objeto dentro de um bucket é identificado por uma chave única, que funciona como o caminho completo para o arquivo, similar a um nome de arquivo em um sistema de arquivos tradicional. O MinIO foi projetado para aplicações de grande escala e pode ser usado tanto em infraestruturas de nuvem quanto em ambientes on-premises.
+**MinIO** é uma solução de armazenamento de objetos de alto desempenho, totalmente compatível com a API do Amazon S3 (Simple Storage Service), serviço de nuvem amplamente usado no mercado. O MinIO foi projetado para armazenar e recuperar qualquer quantidade de dados em larga escala, podendo ser executado tanto em nuvem quanto em ambientes on-premises, inclusive em cenários de produção. Antes de partir para os comandos, é importante compreender o propósito da atividade: estamos definindo uma infraestrutura que reproduz os mesmos padrões de API adotados pelo S3, mas em ambiente controlado e sem custo. Isso permite aprender e praticar os fundamentos do armazenamento de objetos de forma realista, utilizando uma ferramenta que também é empregada em produção em Data Lakes corporativos. Atualmente, boa parte dos pipelines modernos de Big Data, Analytics, AI/ML ou BI começam carregando ou salvando dados em object storage acessado via HTTP, de modo que estará exercitando os mesmos fluxos de trabalho utilizados em infraestruturas reais de nuvem pública e híbrida e desenvolvendo habilidades diretamente aplicáveis ao mercado.
 
 ### Benefícios do MinIO
 
@@ -135,33 +156,50 @@ Cada objeto dentro de um bucket é identificado por uma chave única, que funcio
 - **DELETE**: Remover um objeto de um bucket.
 - **LIST**: Listar objetos em um bucket.
 
-## Configuração com Docker
+### Configuração
 
-Para configurar e iniciar um servidor MinIO usando Docker, siga o padrão que estamos adotando, entre no diretório correspondente no projeto e levante a aplicação. , que roda na porta `9000` por padrão, e `9091` para sua GUI. Verifique a persistência dos volumes e a integração com mesma rede de sua IDE (Jupyter). 
+O container executará o serviço principal do MinIO, expondo:
 
-### Leitura e Gravação de Arquivos
+- Porta 9000 – API S3 (para integração via bibliotecas, Python/Boto3, mc, curl etc.);
+- Porta 9001 – Console Web (GUI de administração e navegação nos buckets).
 
-O MinIO utiliza uma API compatível com S3 para realizar operações via chamadas HTTP, como upload, download, criação de buckets e listagem de arquivos, de forma semelhante à AWS. Para usar o MinIO com Python, a biblioteca recomendada é o Boto3, que facilita a comunicação com o servidor MinIO. O nome "Boto" faz referência ao boto-cor-de-rosa, um golfinho da Amazônia, escolhido de forma divertida por Mitch Garnaat, criador da biblioteca, comparando-a ao boto navegando pelos serviços da nuvem.
+Para iniciar o servidor MinIO no ambiente de prática, utilizaremos o Docker Compose, conforme o padrão estabelecido no projeto:
 
-### Instalação da Boto3
+```bash
+cd /opt/ceub-bigdata/minio
+docker-compose up -d
+```
 
-Você pode instalar a Boto3 usando o pip:  
+A aplicação está disponível na porta `9000` (API compatível com S3 em `http://localhost:9000`) e na porta `9001` (console administrativo via navegador em `http://localhost:9001`).
+ 
+**Usuário:** minioadmin
+**Senha:** minioadmin
+
+Conforme já explicado em sala de aula, um ponto essencial é a persistência dos volumes: ao mapearmos diretórios locais do host para dentro do container, garantimos que os dados armazenados sobrevivam a reinícios ou recriações do container. Essa prática é fundamental para simular o comportamento de um serviço de armazenamento durável em produção e permite testar estratégias de backup e recuperação de dados. Além disso, o serviço MinIO será configurado na mesma rede lógica utilizada pelas demais aplicações do ambiente de prática (ex.: Jupyter Notebook ou outras ferramentas de análise). Isso assegura que os pipelines e notebooks possam acessar diretamente o storage, reproduzindo o cenário real de integração entre camada de dados e camada de processamento em arquiteturas de Big Data. Verifique o arquivo `docker-compose.yml` e promova os ajustes, para fixar este conhecimento. Acione o Professor em caso de dúvidas. 
+
+### Terminologia
+
+- **Objetos**: Unidades de dados/itens que são armazenadas nos buckets. Cada objeto dentro de um bucket é identificado por uma chave única, que funciona como o caminho completo para o arquivo, similar a um nome de arquivo em um sistema de arquivos tradicional. O controle de acesso baseia-se em usuários, grupos, políticas granulares e ACLs/IAM, permitindo restringir quem pode ler, gravar ou apagar objetos — algo essencial em pipelines de Big Data e Data Lakes com múltiplos times e diferentes regras de confidencialidade e uso. 
+- **Buckets**: Um bucket não é apenas uma pasta ou diretório, mas um espaço de nomes (namespace) global. Dentro dele, cada objeto tem uma chave única, que funciona como identificador absoluto. Diferente da hierarquia de diretórios (árvore), no S3/MinIO não há “subpastas reais”: a separação por `/` é apenas parte do nome da chave. 
+- **Chaves**: Identificadores únicos para cada objeto dentro de um bucket. 
+- **Metadados e Atributos**: Informações adicionais armazenadas com cada objeto. Isso permite que o armazenamento de objetos seja mais do que um “repositório de bits”: ele pode organizar e classificar os dados de acordo com a lógica da aplicação ou da empresa, enriquecendo sua governança (ex: content-type, owner, classification): 
+
+| Campo      | Valor                                                                                     |
+|------------|-------------------------------------------------------------------------------------------|
+| Objeto     | contrato123.pdf                                                                           |
+| Metadados  | {`"owner":"juridico", "classification":"confidencial", "content-type":"application/pdf"`} |
+
+
+### API Python: Boto3
+
+O MinIO utiliza uma API compatível com S3 para realizar operações via chamadas HTTP, como upload, download, criação de buckets e listagem de arquivos, de forma semelhante à AWS. Para usar o MinIO com Python, a biblioteca recomendada é o Boto3, que facilita a comunicação com o servidor MinIO. O nome "Boto" faz referência ao boto-cor-de-rosa, um golfinho da Amazônia, escolhido de forma divertida por Mitch Garnaat, criador da biblioteca, comparando-a ao boto navegando pelos serviços da nuvem. Você pode instalar a Boto3 usando o `pip` ou configurando o Dockerfile da IDE Jupyter, como vimos em sala de aula.   
 
 ```python
-
 pip install boto3
-
 ```
-
-<!--
-```python
-
-```
--->
 ### Definição do Client
 
 ```python
-
 import boto3
 from botocore.client import Config
 
@@ -175,28 +213,37 @@ s3 = boto3.client(
 )
 ```
 
+### Criando um Bucket
+
+No console, crie um bucket chamado meuprimeirobucket. Essa etapa simula o início da construção de um Data Lake: um espaço de endereçamento único para objetos. Em seguida, realize um upload simples (ex.: crie um arquivo `teste.txt`). Observe como o MinIO automaticamente associa ID, metadados e conteúdo ao objeto, diferentemente de um sistema de arquivos tradicional. A criação também pode ser feita via API: 
+
+```python
+# Exemplo de criação de um bucket
+s3.create_bucket(Bucket='meu-novo-bucket')
+```
+
 ### Exemplo de Gravação (PUT)
 
 ```python
-# Gravar um arquivo
+# Gravar um arquivo (substitua pelo nome do seu bucket e objeto)
 s3.upload_file('localfile.txt', 'meu-bucket', 'localfile.txt')
 ```
 
 ### Exemplo de Leitura (GET)
 
 ```python
-
-# Ler um arquivo
+# Ler um arquivo (substitua pelo nome do seu bucket e objeto)
 s3.download_file('meu-bucket', 'localfile.txt', 'baixado_localfile.txt')
-
 ```
 
-### Criando um Bucket
+### Testando com curl
 
-```python
+Em sua máquina, faça uma requisição ao objeto via terminal: 
 
-s3.create_bucket(Bucket='meu-novo-bucket')
-
+```bash
+# Exemplo de download usando a API S3 (substitua pelo nome do seu bucket e objeto)
+curl -O http://localhost:9000/meuprimeirobucket/teste.txt \
+     -u minioadmin:minioadmin
 ```
 
 ### Listando Objetos em um Bucket
@@ -211,14 +258,83 @@ for obj in response.get('Contents', []):
 ### Deletando um Objeto
 
 ```python
-
 s3.delete_object(Bucket='meu-bucket', Key='localfile.txt')
-
 ```
 
-Explore a GUI e gere links, tentando acessar o conteúdo via HTTP com a ferramenta `curl`. Pesquise sobre a ferramenta `mc` e a utilize para ampliar sua desenvoltura. 
+### Gerando Presigned URLs com Python
 
-## Conclusão
+Uma Presigned URL é um link temporário e autenticado que dá acesso direto a um objeto em um bucket, sem expor credenciais; isso é útil em Big Data e Cloud porque permite compartilhar dados de forma segura e controlada entre sistemas, pipelines e usuários, evitando cópias desnecessárias e reduzindo custos de transferência e gerenciamento de permissões. Após configurar o cliente `boto3` como visto antes, basta usar `generate_presigned_url` para criar o link. 
+
+```python
+import boto3
+from botocore.client import Config
+
+s3 = boto3.client(
+    's3',
+    endpoint_url='http://localhost:9000',
+    aws_access_key_id='minioadmin',
+    aws_secret_access_key='minioadmin',
+    config=Config(signature_version='s3v4'),
+    region_name='us-east-1'
+)
+
+# Gerar URL temporária para download
+url = s3.generate_presigned_url(
+    'get_object',
+    Params={'Bucket': 'meu-novo-bucket', 'Key': 'localfile.txt'},
+    ExpiresIn=3600  # segundos (1h)
+)
+
+print("URL temporária:", url)
+```
+
+### MinIO Client
+
+O `mc` é o utilitário de linha de comando do MinIO. Ele é análogo ao AWS CLI, mas funciona com qualquer serviço compatível com a API S3, incluindo Azure BLOB Storage, Google Cloud Storage e o próprio MinIO. Na VM, baixe com o comando abaixo: 
+
+```bash
+wget https://dl.min.io/client/mc/release/linux-amd64/mc
+chmod +x mc
+sudo mv mc /usr/local/bin/
+```
+
+<!--# MacOS
+brew install minio/stable/mc--> 
+
+O primeiro passo é configurar uma conexão para seu servidor MinIO local, por meio de um alias: 
+
+```bash
+mc alias set local http://localhost:9000 minioadmin minioadmin
+```
+
+Depois você pode realizar as operações básicas: 
+
+```bash
+#Listar buckets:
+mc ls local
+
+#Criar bucket:
+mc mb local/meu-bucket
+
+#Upload de arquivo:
+mc cp dados.csv local/meu-bucket/
+
+#Download de arquivo:
+mc cp local/meu-bucket/dados.csv .
+
+#Listar objetos de um bucket:
+mc ls local/meu-bucket
+
+#Presigned URL
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc presign local/meu-bucket/dados.csv --expire 2h
+
+# Simular IAM, criando usuários e políticas de acesso
+mc admin user add local aluno123 senha123
+mc admin policy attach local readwrite --user aluno123
+```
+
+## 6. Conclusão
 
 O armazenamento baseado em objetos é uma solução robusta e versátil para gerenciar o crescimento exponencial de dados não estruturados. Com segurança, escalabilidade e flexibilidade, ele é ideal para aplicações modernas, como serviços de nuvem, arquivamento de longo prazo e gerenciamento de dados críticos.
 
