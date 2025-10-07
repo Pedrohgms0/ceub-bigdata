@@ -320,7 +320,7 @@ https://www.google.com/search?q=spark+commands+cheat+sheet&rlz=1C5CHFA_enBR894BR
 Configuração do Spark para MinIO (s3a://)
 -->
 
-## Conclusão
+## 4. Conclusão
 
 O Apache Spark é um framework de computação distribuída projetado para processar grandes volumes de dados de forma paralela, escalável e tolerante a falhas. Ele não atua como um sistema de armazenamento, mas como um motor de processamento capaz de operar sobre diferentes origens de dados — como HDFS, S3, MinIO ou sistemas SQL e NoSQL.
 
