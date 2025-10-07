@@ -1,19 +1,5 @@
 # Apache Spark
 
-<!--## Desafio Spark: 
-
-https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
-
-https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud/download?datasetVersionNumber=3
-
-https://learn.microsoft.com/pt-br/azure/cosmos-db/cassandra/connect-spark-configuration
-
-https://jentekllc8888.medium.com/tutorial-integrate-spark-sql-and-cassandra-complete-with-scala-and-python-example-codes-8307fe9c2901
-
-https://jentekllc8888.medium.com/page-rank-with-apache-spark-graphx-a51964467c56
-
--->
-
 ## 1. Introdução
 
 O Apache Spark é um sistema de computação distribuída de código aberto, projetado para o processamento e análise de dados em larga escala, totalmente compatível com o ecossistema Hadoop. Criado para oferecer alta velocidade, eficiência e facilidade de uso, consolidou-se como a principal plataforma unificada para processamento distribuído de dados massivos, sustentando pipelines modernos de Big Data, Machine Learning, workloads de lote (batch), fluxos em tempo real (streaming), consultas SQL, aprendizado de máquina (MLlib) e análise de grafos (GraphX) dentro de um mesmo framework. Oferece suporte nativo a linguagens amplamente adotadas no universo de Big Data, como Java, Scala, Python e R — o que facilita sua integração em pipelines heterogêneos e equipes multidisciplinares.
@@ -125,7 +111,7 @@ flowchart LR
     C3 -->|Leitura/Gravacao| D
 ```
 
-Em, o fluxo de trabalho é o seguinte: 
+Em suma, o fluxo de trabalho é o seguinte: 
 
 a) O usuário escreve comandos em Python (via PySpark) em um ambiente interativo, como o Jupyter Notebook.
 
@@ -222,7 +208,7 @@ docker network create --driver bridge mybridge
 
 a) Quando o Apache Spark está em execução, ele disponibiliza uma interface web para viabilizar o acompanhamento das tarefas designadas por sua aplicação. A Spark Application UI (`http://localhost:4040`) só se tornará disponível após a inicialização de uma sessão Spark por uma aplicação. 
 
-b) Para isso, crie um notebook no Jupyter e teste o ambiente inicializando uma sessão Spark com os comandos abaixo: 
+b) Para isso, crie um notebook no Jupyter e teste o ambiente inicializando uma sessão Spark com os comandos abaixo:
 
 ```python
 # Importando as bibliotecas
@@ -252,6 +238,16 @@ print("Default parallelism:", sc.defaultParallelism)
 print("Default minimum partitions:", sc.defaultMinPartitions)
 ```
 
+c) Em outra aba, acesse a URL da [Spark Application UI](http://localhost:4040) e observe que agora ela está disponível. 
+
+d) Execute o código abaixo em seu notebook Jupyter para encerrar sua sessão Spark: 
+
+```python
+spark.stop()
+```
+
+e) Atualize o navegador e observe que a interface `http://localhost:4040` não estará mais acessível após encerrarmos a sessão.
+
 <!--
 from pyspark.sql import SparkSession
 spark = SparkSession.builder.getOrCreate()
@@ -263,6 +259,32 @@ O Apache Spark é um framework open-source para processamento distribuído de da
 ## 1. Ambientando-se ao PySpark
 
 [Tutorial Básico](https://www.kaggle.com/code/nilaychauhan/pyspark-tutorial-for-beginners)
+<!--## Desafio Spark: 
+
+https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
+
+https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud/download?datasetVersionNumber=3
+
+https://learn.microsoft.com/pt-br/azure/cosmos-db/cassandra/connect-spark-configuration
+
+https://jentekllc8888.medium.com/tutorial-integrate-spark-sql-and-cassandra-complete-with-scala-and-python-example-codes-8307fe9c2901
+
+https://jentekllc8888.medium.com/page-rank-with-apache-spark-graphx-a51964467c56
+
+<!--
+https://www.datacamp.com/cheat-sheet/pyspark-cheat-sheet-spark-dataframes-in-python
+
+https://images.datacamp.com/image/upload/v1676302905/Marketing/Blog/PySpark_SQL_Cheat_Sheet.pdf
+
+https://intellipaat.com/blog/tutorial/spark-tutorial/spark-and-rdd-cheat-sheet/
+
+https://intellipaat.com/mediaFiles/2019/03/Spark-_-RDD-CS-DESIGN.pdf
+
+https://stanford.edu/~rezab/dao/notes/L11/spark_cheat_sheet.pdf
+
+https://www.google.com/search?q=spark+commands+cheat+sheet&rlz=1C5CHFA_enBR894BR894&oq=spark+commands+&gs_lcrp=EgZjaHJvbWUqCQgBEAAYExiABDIMCAAQRRgTGBYYHhg5MgkIARAAGBMYgAQyCQgCEAAYExiABDIJCAMQABgTGIAEMgkIBBAAGBMYgAQyCggFEAAYExgWGB4yCggGEAAYExgWGB4yCggHEAAYExgWGB4yCggIEAAYExgWGB4yCggJEAAYExgWGB7SAQg2MjQwajBqN6gCALACAA&sourceid=chrome&ie=UTF-8
+
+Configuração do Spark para MinIO (s3a://)
 
 ## 2. Usando Spark para realizar uma análise a partir do dataset que importamos para o MongoDB. 
 
@@ -294,48 +316,16 @@ spark.stop()
 ```
 -->
 
-c) Em outra aba, acesse a URL da [Spark Application UI](http://localhost:4040) e observe que agora ela está disponível. 
-
-d) Execute o código abaixo em seu notebook Jupyter para encerrar sua sessão Spark: 
-
-```python
-spark.stop()
-```
-
-e) Atualize o navegador e observe que a interface `http://localhost:4040` não estará mais acessível após encerrarmos a sessão. 
-
-<!--
-https://www.datacamp.com/cheat-sheet/pyspark-cheat-sheet-spark-dataframes-in-python
-
-https://images.datacamp.com/image/upload/v1676302905/Marketing/Blog/PySpark_SQL_Cheat_Sheet.pdf
-
-https://intellipaat.com/blog/tutorial/spark-tutorial/spark-and-rdd-cheat-sheet/
-
-https://intellipaat.com/mediaFiles/2019/03/Spark-_-RDD-CS-DESIGN.pdf
-
-https://stanford.edu/~rezab/dao/notes/L11/spark_cheat_sheet.pdf
-
-https://www.google.com/search?q=spark+commands+cheat+sheet&rlz=1C5CHFA_enBR894BR894&oq=spark+commands+&gs_lcrp=EgZjaHJvbWUqCQgBEAAYExiABDIMCAAQRRgTGBYYHhg5MgkIARAAGBMYgAQyCQgCEAAYExiABDIJCAMQABgTGIAEMgkIBBAAGBMYgAQyCggFEAAYExgWGB4yCggGEAAYExgWGB4yCggHEAAYExgWGB4yCggIEAAYExgWGB4yCggJEAAYExgWGB7SAQg2MjQwajBqN6gCALACAA&sourceid=chrome&ie=UTF-8
-
-Configuração do Spark para MinIO (s3a://)
--->
-
 ## 4. Conclusão
 
 O Apache Spark é um framework de computação distribuída projetado para processar grandes volumes de dados de forma paralela, escalável e tolerante a falhas. Ele não atua como um sistema de armazenamento, mas como um motor de processamento capaz de operar sobre diferentes origens de dados — como HDFS, S3, MinIO ou sistemas SQL e NoSQL.
 
-Compreender o Spark significa dominar os fundamentos da computação distribuída moderna: processamento paralelo, abstração de dados, tolerância a falhas e interoperabilidade. Sua arquitetura permite executar cargas de trabalho analíticas, de aprendizado de máquina e de integração de dados (ETL) com alta eficiência, tanto em ambientes on-premises quanto em nuvens públicas.
+Ao utilizar o Spark, você atua com os principais fundamentos da computação distribuída moderna: processamento paralelo, abstração de dados, tolerância a falhas e interoperabilidade, em cenários de cargas de trabalho para suportar aplicações analíticas, de aprendizado de máquina e de integração de dados (ETL) com alta eficiência, tanto em ambientes on-premises quanto em nuvens públicas.
 
-A Databricks, empresa fundada pelos próprios criadores do Spark, é atualmente a principal mantenedora do projeto e responsável por sua evolução contínua. Além disso, disponibiliza o Spark como serviço em provedores como AWS, Azure e Google Cloud, o que reforça sua importância como tecnologia-base para engenheiros e cientistas de dados que atuam em ecossistemas híbridos e distribuídos.
-
-Para aprofundamento técnico e experimentação prática, recomenda-se consultar as seguintes fontes:
+A Databricks, empresa fundada pelos próprios criadores do Spark, é atualmente a principal mantenedora do projeto e responsável por sua evolução contínua. Além disso, disponibiliza o Spark como serviço em provedores como AWS, Azure e Google Cloud, o que reforça sua importância como tecnologia-base para engenheiros e cientistas de dados. Para maior aprofundamento técnico e experimentação, consulte:
 
 [Documentação oficial do Apache Spark](https://spark.apache.org/docs/latest/)
-
 [Repositório do projeto no GitHub](https://github.com/apache/spark)
-
 [Guia do PySpark](https://spark.apache.org/docs/latest/api/python/index.html)
-
 [Documentação da Databricks sobre Spark](https://docs.databricks.com/en/getting-started/spark.html)
-
 [Tutoriais da Apache Software Foundation](https://spark.apache.org/examples.html)
