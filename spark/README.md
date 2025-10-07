@@ -2,7 +2,7 @@
 
 ## 1. Introdução
 
-O Apache Spark é um sistema de computação distribuída de código aberto, projetado para executar processamentos paralelos e escaláveis sobre grandes volumes de dados, que funciona como infraestrutura unificada para aplicações que demandam alta desempenho, tolerância a falhas e execução distribuída em clusters locais ou em nuvem. Ao longo dos anos, consolidou-se como a principal plataforma para processamento distribuído de dados massivos, superando algumas das limitações do modelo MapReduce para sustentar workloads de lote (batch), fluxos contínuos (streaming), consultas SQL, aprendizado de máquina (MLlib) e análise de grafos (GraphX) — tudo em um mesmo framework, ao contrário da abordagem fragmentada do ecossistema Hadoop, que tradicionalmente dependia da integração entre múltiplas ferramentas complementares, como Hive, Pig, Oozie e Mahout.
+O Apache Spark é um sistema de código aberto para computação distribuída em memória, agnóstico ao sistema de armazenamento subjacente, e projetado para executar processamentos paralelos e escaláveis sobre grandes volumes de dados. Ao longo dos anos, consolidou-se como a principal plataforma para processamento distribuído de dados massivos, superando algumas das limitações do modelo MapReduce para sustentar workloads de lote (batch), fluxos contínuos (streaming), consultas SQL, aprendizado de máquina (MLlib) e análise de grafos (GraphX) — tudo em um mesmo framework, ao contrário da abordagem fragmentada do ecossistema Hadoop, que tradicionalmente dependia da integração entre múltiplas ferramentas complementares, como Hive, Pig, Oozie e Mahout. Assim, ele funciona como infraestrutura unificada de processamento em larga escala, combinando pipelines de dados, machine learning e SQL sob uma arquitetura resiliente e extensível para aplicações que demandam alta desempenho, tolerância a falhas e execução distribuída em clusters locais ou em nuvem.
 
 O projeto nasceu em 2009 no AMP Lab (Algorithms, Machines, and People Laboratory) da Universidade da Califórnia, Berkeley, sob liderança de Matei Zaharia, então pesquisador do laboratório e hoje CTO da Databricks. O Spark foi concebido como uma alternativa ao modelo MapReduce do Hadoop, oferecendo maior velocidade e flexibilidade no processamento de dados distribuídos. Seu desempenho expressivo e rápida adoção pela comunidade open-source levaram-no a tornar-se projeto de nível superior na Apache Software Foundation em 2014. Nesse mesmo ano, surgiu a Databricks, fundada por Zaharia, Ali Ghodsi, Ion Stoica e outros pesquisadores do AMP Lab, como um spinoff acadêmico com a missão de tornar o Spark acessível e operacional em escala empresarial.
 
@@ -26,7 +26,7 @@ O Apache Spark foi projetado para oferecer processamento distribuído de alta pe
 
 Essas características consolidam o Spark como o núcleo das arquiteturas modernas de Big Data, servindo de base para pipelines de ETL, processamento de fluxos em tempo real e aplicações de aprendizado de máquina em larga escala.
 
-### Componentes Principais
+### 2.1. Componentes Principais
 
 A arquitetura do Apache Spark segue o modelo master/worker, em que o Driver (nó mestre) coordena a execução das aplicações e distribui tarefas para os Executors (nós de trabalho), responsáveis pelo processamento efetivo dos dados. Essa estrutura garante paralelismo, resiliência e reprocessamento automático em caso de falhas.
 
@@ -40,19 +40,19 @@ A arquitetura do Apache Spark segue o modelo master/worker, em que o Driver (nó
 
 - **Tasks**: Unidades mínimas de execução, derivadas do plano de execução definido pelo Driver. Cada task processa uma partição dos dados em paralelo.
 
-### Conceitos-Chave
+### 2.2. Conceitos-Chave
 
 O modelo de execução do Apache Spark é baseado em abstrações que permitem expressar computações distribuídas de forma simples e eficiente, mantendo controle sobre paralelismo, tolerância a falhas e reuso de dados em memória.
 
 - **RDDs (Resilient Distributed Datasets)**: É a estrutura de dados fundamental do Spark. Representa uma coleção imutável e distribuída de elementos, particionada entre os nós do cluster. Cada RDD registra a linhagem (lineage) de suas transformações, o que permite sua reconstrução automática em caso de falhas — garantindo resiliência sem necessidade de replicação completa dos dados.
 
-- **Transformações**: São operações que definem novos RDDs a partir de outros, sem executar imediatamente o processamento. São avaliadas de forma *lazy*, isto é, apenas constroem o plano lógico de execução. Exemplos: `filter()`, `map()`, `union()` `join()`, cuja saída é outro RDD. Esse comportamento permite ao Spark otimizar globalmente o pipeline antes de iniciar o processamento real.
+- **Transformações**: São operações que definem novos RDDs ou DataFrames a partir de outros, mas não executam imediatamente o processamento. O Spark apenas registra essas instruções no plano lógico de execução (lineage ou Directed Acyclic Graph – DAG), aguardando uma ação final. São avaliadas de forma *lazy* (preguiçosa), isto é, apenas constroem o plano lógico de execução. Exemplos: `filter()`, `map()`, `union()` `join()`, cuja saída é outro RDD. Esse comportamento permite que o `Catalyst Optimizer`, o otimizador interno do Spark, analise toda a sequência de transformações e reorganize as operações para reduzir custos de I/O, aplicar `predicate pushdown` e eliminar redundâncias antes da execução real. Trata-se de uma técnica de otimização (que também é usada por outros motores como Trino, Dremio e Presto), para reduzir o volume de dados lido do armazenamento, movendo filtros (predicados) para o nível mais baixo possível da execução — ou seja, próximo da origem dos dados. Em vez de carregar todo o conjunto de dados na memória e só depois aplicar o filtro, o Spark envia a condição de filtragem diretamente ao mecanismo de leitura (parquet, ORC, JDBC, etc.), que retorna apenas os registros relevantes. 
 
-- **Ação**: Diferentemente das transformações, as ações disparam a execução do plano construído, materializando os resultados. Exemplos: `count()`, `first()`, `collect()`, `saveAsTextFile()`, `take(n)` ou `collect()`. Ao executar uma ação, o Spark cria um DAG (Directed Acyclic Graph) de dependências entre RDDs, o qual é então dividido em stages e tasks para execução distribuída.
+- **Ação**: Diferentemente das transformações, as ações disparam a execução do plano construído, materializando os resultados. ão avaliadas de forma *eager* (ansiosa). Exemplos: `count()`, `first()`, `collect()`, `saveAsTextFile()`, `take(n)` ou `collect()`. Ao executar uma ação, o Spark envia o DAG de transformações acumuladas para execução nos executors, criando stages e tasks que são processadas em paralelo no cluster. O resultado é então materializado e retornado ao driver.
 
-- **Partições**: Cada RDD é composto por várias partições, que determinam o grau de paralelismo da aplicação. Cada task do Spark processa uma partição, permitindo que múltiplos fragmentos dos dados sejam processados simultaneamente por diferentes executores. Um particionamento equilibrado é essencial para maximizar o uso dos recursos do cluster e reduzir gargalos.
+- **Partições**: Cada RDD é dividido logicamente em múltiplas partições, que representam unidades independentes de processamento distribuído. O número e o balanceamento dessas partições determinam o grau de paralelismo da aplicação.
 
-### Bibliotecas Integradas
+### 2.3. Bibliotecas Integradas
 
 O Apache Spark adota uma arquitetura modular, na qual diferentes bibliotecas especializadas compartilham o mesmo motor de execução distribuída. Essa integração nativa permite tratar múltiplos tipos de workload — batch, streaming, aprendizado de máquina e grafos — sob uma base unificada de processamento de dados em larga escala.
 
@@ -125,9 +125,9 @@ Um dos princípios fundamentais na arquitetura do Spark é o desacoplamento entr
 
 Anteriormente, vimos que em ambientes modernos de Big Data, hoje prevalece o armazenamento baseado em objetos (Object Storage), que tornou-se o padrão de fato para suportar sistemas de larga escala. No contexto do Spark, essa arquitetura é ideal, pois elimina os gargalos e a complexidade associada à coordenação de blocos e metadados centralizados — problema característico de sistemas com NameNodes, como o HDFS. Além disso, o desacoplamento entre computação e armazenamento viabiliza o uso de clusters elásticos e temporários, com dados que persistem fora do ambiente de execução, alinhando-se ao paradigma da computação em nuvem.  
 
-Entre as implementações compatíveis com Spark, o MinIO destaca-se como uma solução open-source, distribuída e totalmente compatível com a API S3, que pode ser implantada tanto em nuvens públicas quanto em data centers corporativos (on-premises). Sua compatibilidade total com a API S3 garante integração imediata com o ecossistema do Spark e com ferramentas modernas como Dremio, Trino/Presto, Iceberg, Delta Lake e Airflow.
+Entre as implementações compatíveis com o Apache Spark, o MinIO destaca-se como uma solução open-source e distribuída, totalmente compatível com a API S3, podendo ser implantada tanto em nuvens públicas quanto em data centers corporativos (on-premises). Essa compatibilidade garante integração nativa com o ecossistema do Spark e com ferramentas modernas de processamento e orquestração de dados, como Dremio, Trino/Presto, Apache Iceberg, Delta Lake e Airflow. O Spark mantém, ainda, compatibilidade com sistemas de armazenamento amplamente utilizados no mercado — como HDFS, Amazon S3, Azure Blob Storage, Google Cloud Storage e MinIO — refletindo seu princípio de desacoplamento entre computação e armazenamento. Essa característica permite executar cargas de trabalho de forma elástica e independente da infraestrutura subjacente, tanto em ambientes híbridos quanto totalmente distribuídos.
 
-Diferentemente dos sistemas de arquivos hierárquicos, o Object Storage adota um modelo plano (flat), em que cada objeto é identificado por uma key e acessado via protocolos HTTP ou S3 API, permitindo escalabilidade praticamente ilimitada, alta durabilidade e acesso massivamente paralelo. Se comparado a sistemas de arquivos distribuídos tradicionais como o HDFS, o uso do MinIO com o Spark apresenta vantagens que se destacam em boa parte dos cenários:
+Diferentemente dos sistemas de arquivos hierárquicos, o Object Storage com MinIO/S3 adota um modelo plano (flat), em que cada objeto é identificado por uma key e acessado via protocolos HTTP ou S3 API, permitindo escalabilidade praticamente ilimitada, alta durabilidade e acesso massivamente paralelo. Se comparado a sistemas de arquivos distribuídos tradicionais como o HDFS, o uso do MinIO com o Spark apresenta vantagens que se destacam em boa parte dos cenários:
 
 - **Escalabilidade horizonal**: Projetado para armazenar e servir datasets de múltiplos PetaBytes, sem pontos únicos de falha ou limitação decorrente de metadados centralizados.
 
@@ -163,7 +163,17 @@ A Databricks desempenhou papel central na expansão do ecossistema em torno do A
 
 - **Unity Catalog**: camada de governança unificada que centraliza o gerenciamento de metadados, controle de acesso e auditoria em ambientes multiusuário e multicloud, oferecendo uma base consistente para políticas de segurança e conformidade em ecossistemas distribuídos.
 
-Essas extensões contribuíram para a consolidação do Spark como o núcleo computacional das arquiteturas Lakehouse, em que o processamento distribuído é desacoplado do armazenamento persistente, geralmente implementado sobre object stores escaláveis (S3, Azure Blob Storage, Google Cloud Storage, MinIO). Ressalta-se, ainda, que diversas dessas tecnologias — como Delta Lake, MLflow e Photon — foram posteriormente disponibilizadas sob a governança da Linux Foundation, assegurando continuidade evolutiva, neutralidade tecnológica e sustentação ao ecossistema aberto associado ao Apache Spark, mantido e aprimorado pela comunidade de software livre.
+Além dessas tecnologias diretamente associadas à Databricks, o Apache Spark mantém integração nativa com diversos sistemas e ferramentas que compõem o ecossistema moderno de dados distribuídos:
+
+- **Bancos NoSQL e OLAP**: integração direta com Cassandra, HBase e MongoDB para dados transacionais ou semiestruturados, e com mecanismos OLAP (on-line transaction analytics processing) distribuídos como ClickHouse, Druid e Apache Pinot, que permitem análises analíticas em tempo quase real sobre grandes volumes de dados particionados. Essa combinação possibilita ao Spark atuar tanto como produtor (ETL/ELT) quanto consumidor (consulta ou agregação) em pipelines analíticos híbridos.
+
+- **Mensageria e Streaming**: suporte nativo a Apache Kafka, Amazon Kinesis e Azure Event Hubs, permitindo a ingestão e o processamento contínuo de fluxos de dados (real-time streaming) com tolerância a falhas.
+
+- **SQL Engines e Federadores**: interoperabilidade com Trino, Presto e Dremio, viabilizando consultas federadas sobre múltiplas fontes de dados.
+
+- **Machine Learning e Ciência de Dados**: integração com MLflow (gerenciamento de experimentos), TensorFlow e `scikit-learn`, permitindo unificar pipelines de aprendizado de máquina em ambientes distribuídos.
+
+Essas integrações ampliam o alcance do Spark para além do contexto de processamento em lote, consolidando-o como elemento de convergência entre sistemas de armazenamento, orquestração e análise distribuída. Ressalta-se, ainda, que diversas dessas tecnologias — como Delta Lake, MLflow e Photon — foram posteriormente disponibilizadas sob a governança da Linux Foundation, assegurando continuidade evolutiva, neutralidade tecnológica e sustentação ao ecossistema aberto associado ao Apache Spark, mantido e aprimorado pela comunidade de software livre.
 
 ## 3. Atividade Prática
 
@@ -246,74 +256,6 @@ spark.stop()
 
 e) Atualize o navegador e observe que a interface `http://localhost:4040` não estará mais acessível após encerrarmos a sessão.
 
-<!--
-from pyspark.sql import SparkSession
-spark = SparkSession.builder.getOrCreate()
-
-# Análise de Dados com PySpark 
-
-O Apache Spark é um framework open-source para processamento distribuído de dados em larga escala. O PySpark é uma biblioteca Python para usar o Spark, que fornece uma API de alto nível para processar dados de maneira eficiente. O PySpark oferece suporte a transformações e ações em RDDs (Resilient Distributed Datasets) e DataFrames, que são abstrações para trabalhar com dados distribuídos. 
-
-## 1. Ambientando-se ao PySpark
-
-[Tutorial Básico](https://www.kaggle.com/code/nilaychauhan/pyspark-tutorial-for-beginners)
-<!--## Desafio Spark: 
-
-https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
-
-https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud/download?datasetVersionNumber=3
-
-https://learn.microsoft.com/pt-br/azure/cosmos-db/cassandra/connect-spark-configuration
-
-https://jentekllc8888.medium.com/tutorial-integrate-spark-sql-and-cassandra-complete-with-scala-and-python-example-codes-8307fe9c2901
-
-https://jentekllc8888.medium.com/page-rank-with-apache-spark-graphx-a51964467c56
-
-<!--
-https://www.datacamp.com/cheat-sheet/pyspark-cheat-sheet-spark-dataframes-in-python
-
-https://images.datacamp.com/image/upload/v1676302905/Marketing/Blog/PySpark_SQL_Cheat_Sheet.pdf
-
-https://intellipaat.com/blog/tutorial/spark-tutorial/spark-and-rdd-cheat-sheet/
-
-https://intellipaat.com/mediaFiles/2019/03/Spark-_-RDD-CS-DESIGN.pdf
-
-https://stanford.edu/~rezab/dao/notes/L11/spark_cheat_sheet.pdf
-
-https://www.google.com/search?q=spark+commands+cheat+sheet&rlz=1C5CHFA_enBR894BR894&oq=spark+commands+&gs_lcrp=EgZjaHJvbWUqCQgBEAAYExiABDIMCAAQRRgTGBYYHhg5MgkIARAAGBMYgAQyCQgCEAAYExiABDIJCAMQABgTGIAEMgkIBBAAGBMYgAQyCggFEAAYExgWGB4yCggGEAAYExgWGB4yCggHEAAYExgWGB4yCggIEAAYExgWGB4yCggJEAAYExgWGB7SAQg2MjQwajBqN6gCALACAA&sourceid=chrome&ie=UTF-8
-
-Configuração do Spark para MinIO (s3a://)
-
-## 2. Usando Spark para realizar uma análise a partir do dataset que importamos para o MongoDB. 
-
-a) No Jupyter, crie um novo notebook Python 3 (ipykernel) e insira o seguinte código para criar uma sessão Spark:
-
-```python
-from pyspark.sql import SparkSession
-
-spark = SparkSession.builder \
-    .appName("Análise de Dados do Censo da Educação Superior") \
-    .config("spark.mongodb.input.uri", "mongodb://172.22.0.3:27017/inep.ies") \
-    .getOrCreate()
-```
-b) Carregue os dados do MongoDB para um DataFrame Spark:
-
-```python
-df = spark.read.format("com.mongodb.spark.sql.DefaultSource").load()
-```
-c) Realize análises e transformações nos dados para se habituar com as funcionalidades do PySpark. Por exemplo, para contar o número de instituições de ensino superior por estado:
-
-```python
-df.groupBy("UF").count().show()
-```
-
-d) Quando terminar a análise, lembre-se de encerrar a sessão Spark:
-
-```python
-spark.stop()
-```
--->
-
 ## 4. Conclusão
 
 O Apache Spark é um framework de computação distribuída projetado para processar grandes volumes de dados de forma paralela, escalável e tolerante a falhas. Ele não atua como um sistema de armazenamento, mas como um motor de processamento capaz de operar sobre diferentes origens de dados — como HDFS, S3, MinIO ou sistemas SQL e NoSQL.
@@ -322,8 +264,8 @@ Ao utilizar o Spark, você atua com os principais fundamentos da computação di
 
 A Databricks, empresa fundada pelos próprios criadores do Spark, é atualmente a principal mantenedora do projeto e responsável por sua evolução contínua. Além disso, disponibiliza o Spark como serviço em provedores como AWS, Azure e Google Cloud, o que reforça sua importância como tecnologia-base para engenheiros e cientistas de dados. Para maior aprofundamento técnico e experimentação, consulte:
 
-[Documentação oficial do Apache Spark](https://spark.apache.org/docs/latest/)
-[Repositório do projeto no GitHub](https://github.com/apache/spark)
+[Documentação Oficial do Apache Spark](https://spark.apache.org/docs/latest/)
+[Repositório do Projeto no GitHub](https://github.com/apache/spark)
 [Guia do PySpark](https://spark.apache.org/docs/latest/api/python/index.html)
 [Documentação da Databricks sobre Spark](https://docs.databricks.com/en/getting-started/spark.html)
 [Tutoriais da Apache Software Foundation](https://spark.apache.org/examples.html)
