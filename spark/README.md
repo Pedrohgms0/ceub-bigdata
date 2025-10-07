@@ -47,6 +47,16 @@ O modelo de execução do Apache Spark é baseado em abstrações que permitem e
 - **RDDs (Resilient Distributed Datasets)**: É a estrutura de dados fundamental do Spark. Representa uma coleção imutável e distribuída de elementos, particionada entre os nós do cluster. Cada RDD registra a linhagem (lineage) de suas transformações, o que permite sua reconstrução automática em caso de falhas — garantindo resiliência sem necessidade de replicação completa dos dados.
 
 - **Transformações**: São operações que definem novos RDDs ou DataFrames a partir de outros, mas não executam imediatamente o processamento. O Spark apenas registra essas instruções no plano lógico de execução (lineage ou Directed Acyclic Graph – DAG), aguardando uma ação final. São avaliadas de forma *lazy* (preguiçosa), isto é, apenas constroem o plano lógico de execução. Exemplos: `filter()`, `map()`, `union()` `join()`, cuja saída é outro RDD. Esse comportamento permite que o `Catalyst Optimizer`, o otimizador interno do Spark, analise toda a sequência de transformações e reorganize as operações para reduzir custos de I/O, aplicar `predicate pushdown` e eliminar redundâncias antes da execução real. Trata-se de uma técnica de otimização (que também é usada por outros motores como Trino, Dremio e Presto), para reduzir o volume de dados lido do armazenamento, movendo filtros (predicados) para o nível mais baixo possível da execução — ou seja, próximo da origem dos dados. Em vez de carregar todo o conjunto de dados na memória e só depois aplicar o filtro, o Spark envia a condição de filtragem diretamente ao mecanismo de leitura (parquet, ORC, JDBC, etc.), que retorna apenas os registros relevantes. 
+Em vez de carregar todo o conjunto de dados na memória e só depois aplicar o filtro, o Spark envia a condição de filtragem diretamente ao mecanismo de leitura (parquet, ORC, JDBC, etc.), que retorna apenas os registros relevantes. Exemplo:
+
+```python
+# Sem predicate pushdown (leitura completa + filtro em memória)
+df = spark.read.parquet("s3://dataset/usuarios")
+df.filter(df["idade"] > 30)
+
+# Com predicate pushdown (filtro aplicado no nível de leitura)
+df = spark.read.parquet("s3://dataset/usuarios").filter("idade > 30")
+```
 
 - **Ação**: Diferentemente das transformações, as ações disparam a execução do plano construído, materializando os resultados. ão avaliadas de forma *eager* (ansiosa). Exemplos: `count()`, `first()`, `collect()`, `saveAsTextFile()`, `take(n)` ou `collect()`. Ao executar uma ação, o Spark envia o DAG de transformações acumuladas para execução nos executors, criando stages e tasks que são processadas em paralelo no cluster. O resultado é então materializado e retornado ao driver.
 
@@ -64,7 +74,7 @@ O Apache Spark adota uma arquitetura modular, na qual diferentes bibliotecas esp
 
 - **GraphX**: API para modelagem e análise de grafos sobre dados distribuídos, permitindo executar algoritmos como PageRank, Connected Components e Shortest Paths. É útil para aplicações que exploram relacionamentos complexos entre entidades, como redes sociais, sistemas de recomendação e grafos de conhecimento.
 
-### PySpark
+### 2.4. PySpark
 
 O PySpark é a interface oficial do Apache Spark para a linguagem Python, projetada para permitir o desenvolvimento de aplicações distribuídas com simplicidade e expressividade. Ele fornece uma API de alto nível que abstrai a complexidade da execução em cluster, permitindo que o desenvolvedor utilize estruturas familiares do ecossistema Python — como DataFrames e operações SQL — sobre um motor de processamento massivamente paralelo.
 
@@ -119,7 +129,7 @@ c) Cada Executor processa uma partição dos dados de forma paralela, aplicando 
 
 d) Os dados são lidos e gravados diretamente em sistemas distribuídos, como MinIO/S3, HDFS ou Azure Blob Storage.
 
-### Integração com Armazenamento Baseado em Objetos
+### 2.5. Integração com Armazenamento Baseado em Objetos
 
 Um dos princípios fundamentais na arquitetura do Spark é o desacoplamento entre o motor de processamento e do sistema de armazenamento, decisão que torna a solução independente de formatos e infraestruturas específicas. Essa flexibilidade é contrastante com o modelo original do Hadoop, no qual o MapReduce estava fortemente acoplado ao HDFS (Hadoop Distributed File System).
 
@@ -190,7 +200,7 @@ Caso seja o seu primeiro acesso a esta instância do Jupyter, lembre-se de execu
 docker-compose logs | grep 'token='
 ```
 
-### Configuração da rede para comunicação com outros contêineres
+### 3.1. Configuração da rede para comunicação com outros contêineres
 
 Para permitir a comunicação entre os contêineres de outros serviços de Big Data e NoSQL, lembre-se de verificar o arquivo `docker-compose.yml`, que deve estar atualizado para conectá-los à rede `mybridge`. 
 
@@ -212,7 +222,7 @@ Caso não tenha criado, implemente a rede virtual `mybridge` no Docker:
 docker network create --driver bridge mybridge
 ```
 
-### Inicialize e teste o Spark
+### 3.2. Inicialize e teste o Spark
 
 a) Quando o Apache Spark está em execução, ele disponibiliza uma interface web para viabilizar o acompanhamento das tarefas designadas por sua aplicação. A Spark Application UI (`http://localhost:4040`) só se tornará disponível após a inicialização de uma sessão Spark por uma aplicação. 
 
