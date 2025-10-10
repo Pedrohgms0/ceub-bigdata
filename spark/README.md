@@ -141,7 +141,7 @@ Diferentemente dos sistemas de arquivos hierárquicos, o Object Storage com MinI
 
 - **Escalabilidade horizonal**: Projetado para armazenar e servir datasets de múltiplos PetaBytes, sem pontos únicos de falha ou limitação decorrente de metadados centralizados.
 
-- **Desempenho Superior**: Capaz de atingir mais de 2,6Tbps em leituras e 1,3 Tbps em gravações, fornecendo throughput adequado para workloads analíticos, IA/ML e processamento distribuído em memória.
+- **Desempenho Superior**: Capaz de atingir mais de 2,6Tbps em leituras e 1,3Tbps em gravações, fornecendo throughput adequado para workloads analíticos, IA/ML e processamento distribuído em memória.
 
 - **Durabilidade e Resiliência**: Adota algoritmos de Erasure Coding e replicação automática entre nós, assegurando integridade mesmo em caso de falhas físicas.
 
@@ -163,7 +163,7 @@ Contudo, é importante ressaltar que, em determinados nichos de aplicação, mes
 
 Assim, embora o Object Storage represente a direção predominante da evolução arquitetural, o HDFS permanece como um alicerce histórico e funcional, sendo amplamente empregado em infraestruturas híbridas que combinam o legado Hadoop com a elasticidade dos object stores modernos. Ele continua particularmente relevante em cenários que envolvem arquivos extremamente grandes (com blocos de 128MB ou 256MB) e acessos sequenciais intensos, típicos de pipelines ETL e cargas analíticas massivas. Nesses contextos, o baixo custo por TeraByte, o controle direto da infraestrutura e a proximidade física entre as camadas de processamento e armazenamento de dados ainda tornam o HDFS uma alternativa sólida e competitiva.
 
-### Outras integrações
+### 2.6. Outras integrações
 
 A Databricks desempenhou papel central na expansão do ecossistema em torno do Apache Spark, promovendo sua transição de um motor de processamento distribuído para um componente estruturante das arquiteturas Lakehouse. Por meio de tecnologias complementares, a empresa contribuiu para a consolidação de um ambiente integrado que combina processamento, governança e armazenamento em larga escala:
 
@@ -516,16 +516,15 @@ plt.tight_layout()
 plt.show()
 ```
 
-| Formato | Tipo             | Compressão | Tamanho        | Velocidade de Leitura | Uso Ideal |
-|----------|------------------|-------------|----------------|------------------------|------------|
-| **CSV**  | Texto            | Nenhuma     | Grande         | Lento                  | Intercâmbio simples, dados brutos |
-| **JSON** | Texto            | Nenhuma     | Muito grande   | Lento                  | APIs e logs semiestruturados |
-| **Parquet** | Binário colunar | Snappy      | Compacto       | Muito rápido           | Workloads analíticos (OLAP) |
-| **Avro** | Binário linha    | Deflate     | Médio          | Razoável               | Streaming e *schema evolution* |
-| **ORC**  | Binário colunar  | ZLIB        | Compacto       | Mais rápido            | *Data Warehouses* Hadoop/Spark |
+| Formato    | Tipo             | Compressão  | Tamanho        | Velocidade de Leitura  | Uso Ideal                         |
+|------------|------------------|-------------|----------------|------------------------|-----------------------------------|
+| **CSV**    | Texto            | Nenhuma     | Grande         | Lento                  | Intercâmbio simples, dados brutos |
+| **JSON**   | Texto            | Nenhuma     | Muito grande   | Lento                  | APIs e logs semiestruturados      |
+| **Parquet**| Binário colunar  | Snappy      | Compacto       | Muito rápido           | Workloads analíticos (OLAP)       |
+| **Avro**   | Binário linha    | Deflate     | Médio          | Razoável               | Streaming e *schema evolution*    |
+| **ORC**    | Binário colunar  | ZLIB        | Compacto       | Mais rápido            | *Data Warehouses* Hadoop/Spark    |
 
-O **Parquet** e o **ORC** são os formatos preferenciais para *Data Lakes* e *Lakehouses*, pois oferecem compressão, *schema* embutido, leitura seletiva e suporte a *predicate pushdown*, reduzindo significativamente o custo de I/O.  
-O **Avro** é mais adequado a *pipelines* de ingestão e *streaming*, enquanto **CSV** e **JSON** servem apenas como formatos intermediários de integração e troca de dados brutos.
+Dessa forma, em ambientes profissionais, os formatos **Parquet** e o **ORC** são preferenciais para *Data Lakes* e *Data Lakehouses*, pois oferecem compressão, *schema* embutido, leitura seletiva e suporte a *predicate pushdown*, reduzindo significativamente o custo de I/O. Por sua vez, o formato **Avro** é mais adequado a *pipelines* de ingestão e *streaming*, enquanto os tradicionais **CSV** e **JSON** servem como formatos intermediários de integração e troca de dados brutos.
 
 ## 4. Conclusão
 
