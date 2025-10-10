@@ -478,7 +478,7 @@ for fmt in formats:
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Dados obtidos no benchmark
+# Dados obtidos no benchmark exemplo
 data = {
     "Formato": ["CSV", "JSON", "PARQUET", "AVRO", "ORC"],
     "Tamanho_MB": [14.65, 47.80, 4.37, 7.34, 4.19],
