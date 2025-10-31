@@ -15,8 +15,8 @@ Ao longo do curso, exploraremos conceitos, infraestrutura e aplicações de Big 
 | [05](./cassandra/)                                                                   | Modelagem e consulta eficiente em bases distribuídas                     | 26/09/2025 |
 | [06](./minio/)                                                                       | Uso de armazenamento de objetos para organizar e persistir Datalakes     | 03/10/2025 |
 | [07](./spark/)                                                                       | Processamento distribuído em larga escala com PySpark                    | 10/10/2025 |
-| [08](./delta/)                                                                       | Implementação de Datalakehouse e Arquitetura Medallion                   | 17/10/2025 |
-| [09](./airflow/)                                                                     | Orquestração de Workflows e Automação de Pipelines                       | 31/10/2025 |
+| [08](./delta/)                                                                       | Implementação de Datalakehouse e Arquitetura Medallion                   | 31/10/2025 |
+| [09](./airflow/)                                                                     | Orquestração de Workflows e Automação de Pipelines                       | 07/11/2025 |
 <!--
 | 06 | [Redis](./redis/)                                                                    | Prática com Banco de Dados Chave-Valor                     | 02/04/2025 |
 | 07 | [RabbitMQ](./rabbitmq/)                                                              | Prática com Message Broker                                 | 09/04/2025 |
@@ -499,3 +499,4 @@ Nas VMs (configuração alternativa), precisamos evitar desligamentos abruptos, 
 
 
 Agora você está com o ambiente preparado e pronto para começar os laboratórios. Em caso de dúvidas, não hesite em me contactar: [klayton.castro@ceub.edu.br](klayton.castro@ceub.edu.br).
+
