@@ -235,7 +235,7 @@ Esses catálogos não apenas descrevem a estrutura das tabelas, mas também gara
 
 ## 4. Prática com Delta Lake
 
-Com os fundamentos teóricos consolidados, esta seção aplica os conceitos estudados em ambiente laboratorial, demonstrando a criação e manipulação de tabelas Delta sobre um object store compatível. Antes de criar a primeira tabela Delta, é necessário garantir que o Spark conheça o Delta Lake package compatível com a versão instalada. No Jupyter hospedado no contêiner Spark, basta iniciar a sessão com PySpark já carregando o pacote `delta-spark` via parâmetro `.config("spark.jars.packages", ...)` Ao executar essa célula, o PySpark baixa automaticamente o pacote `delta-spark_2.12-3.2.0.jar` e suas dependências. No entanto, em ambientes modernos conteinerizados, o ideal é fazer o build novamente incluindo esse .jar já na montagem do Dockerfile, que podemos fazer posteriormente dessa forma: 
+Com os fundamentos teóricos consolidados, esta seção aplica os conceitos estudados em ambiente laboratorial, demonstrando a criação e manipulação de tabelas Delta sobre um object store compatível. Antes de criar a primeira tabela Delta, é necessário garantir que o Spark conheça o Delta Lake package compatível com a versão instalada. No Jupyter hospedado no contêiner Spark, basta iniciar a sessão com PySpark já carregando o pacote `delta-spark` via parâmetro `.config("spark.jars.packages", ...)` Ao executar a célula (`pip install delta-spark==3.2.1`), o PySpark baixa automaticamente o pacote `delta-spark` e suas dependências. No entanto, em ambientes modernos conteinerizados, o ideal é fazer o build novamente incluindo esse .jar já na montagem do Dockerfile, que podemos fazer posteriormente dessa forma: 
 
 ```bash
 # Baixa o Delta Lake compatível com Spark 3.5.x
@@ -246,11 +246,27 @@ RUN wget -q --no-check-certificate \
 
 Dessa forma, o pacote já estará disponível no classpath padrão do Spark. Em seguida, no notebook, a sessão Spark pode ser iniciada sem a linha `.config("spark.jars.packages", ...)`. Para validar a instalação, execute: 
 
-```python
-from delta import configure_spark_with_delta_pip
 
-print("Versão do Delta Lake:")
+```python
+from pyspark.sql import SparkSession
+from delta import configure_spark_with_delta_pip, DeltaTable
+import importlib.metadata
+
+# Configura a sessão Spark com suporte ao Delta Lake
+builder = (
+    SparkSession.builder.appName("DeltaLakeTest")
+    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+)
+
+# Cria a sessão Spark
+spark = configure_spark_with_delta_pip(builder).getOrCreate()
+
+# Exibe as versões
+print("Versão do Delta Lake (biblioteca):", importlib.metadata.version("delta-spark"))
+print("Versão do Spark:")
 spark.sql("SELECT version()").show()
+#spark.stop()
 ```
 
 ### 4.1. Leitura dos arquivos CSV (Bronze)
@@ -284,15 +300,17 @@ A partir desse ponto, os dados brutos estão carregados e prontos para integraç
 Nesta etapa, criaremos uma visão integrada dos resultados da temporada 2022, unindo informações de pilotos, equipes e circuitos. Essa operação representa o refinamento dos dados — característica essencial da camada Silver.
 
 ```python
+# Cria as views temporárias
 drivers.createOrReplaceTempView("drivers")
 constructors.createOrReplaceTempView("constructors")
 races.createOrReplaceTempView("races")
 circuits.createOrReplaceTempView("circuits")
 results.createOrReplaceTempView("results")
 
+# Query SparkSQL
 query = """
 SELECT 
-    r.year,
+    ra.year,
     ra.name AS race_name,
     c.name AS circuit,
     d.forename || ' ' || d.surname AS driver,
@@ -309,9 +327,9 @@ JOIN circuits c ON c.circuitId = ra.circuitId
 WHERE ra.year = 2022
 """
 
-f1_2022 = spark.sql(query)
-f1_2022.show(5, truncate=False)
-print(f"Total de registros: {f1_2022.count()}")
+# Executa e mostra resultado
+df = spark.sql(query)
+df.show(20, truncate=False)
 ```
 
 ### 4.2.1. Escrita no Delta Lake
