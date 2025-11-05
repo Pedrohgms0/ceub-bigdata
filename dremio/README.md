@@ -1,4 +1,4 @@
-# Dremio na Arquitetura Data Lakehouse: Motor SQL e Virtualização sobre Spark, MinIO e Delta Lake
+# Camada Analítica na Arquitetura Data Lakehouse: Motor SQL e Virtualização de Dados
 
 ## 1. Introdução
 
@@ -152,4 +152,3 @@ O Dremio oferece controle de acesso granular (usuários, grupos, roles), autenti
 O **Dremio** consolida-se como um dos motores centrais da arquitetura **Data Lakehouse**, oferecendo uma camada SQL unificada que integra armazenamento distribuído, governança transacional e consumo analítico. Sua integração com o **Spark**, o **Delta Lake** e o **Metabase** estabelece um pipeline completo, desde a ingestão até a visualização, com base em padrões abertos e sem dependência de fornecedores.
 
 No contexto educacional e de pesquisa, o Dremio oferece uma plataforma robusta e transparente para o ensino de conceitos de **virtualização de dados, governança distribuída e processamento analítico sobre object stores**, permitindo que estudantes e profissionais experimentem arquiteturas de nível corporativo em ambientes de laboratório reprodutíveis.
-

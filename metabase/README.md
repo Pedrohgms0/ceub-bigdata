@@ -1,16 +1,18 @@
-# Metabase na Arquitetura Data Lakehouse: Integração com Spark, MinIO, Delta Lake e Dremio
+# Camada Analítica na Arquitetura Data Lakehouse: Visualização de Dados (DataViz) e Business Intelligence (BI)
 
 ## 1. Introdução
 
-A camada de visualização e análise de dados ocupa papel estratégico dentro da arquitetura moderna de dados. No contexto do **Data Lakehouse**, o Business Intelligence (BI) atua sobre dados já consolidados, fornecendo recursos de exploração interativa, construção de dashboards e disseminação de indicadores de desempenho. Entre as ferramentas open source que atendem a esse propósito, destaca-se o **Metabase**, cuja simplicidade operacional e compatibilidade com diversos bancos de dados o tornam particularmente adequado a ambientes acadêmicos e corporativos.
+A Camada Analítica desempenha papel essencial na Arquitetura Data Lakehouse, ao permitir a exploração, visualização e interpretação de informações derivadas das camadas transacionais e de processamento. Nesse contexto, as soluções de Visualização e Business Intelligence (BI) tornam-se fundamentais para transformar dados governados e versionados em conhecimento acessível e acionável.
 
-Concebido como uma solução de **Business Intelligence self-service**, o Metabase permite que usuários não técnicos construam consultas e visualizações diretamente sobre dados estruturados e semiestruturados, mantendo compatibilidade com bancos relacionais (PostgreSQL, MySQL, MariaDB) e mecanismos analíticos distribuídos (Trino, Dremio, Spark SQL). No contexto da pilha moderna implementada neste curso, o Metabase representa a **camada Gold de consumo analítico**, atuando sobre dados governados e versionados via **Delta Lake** e disponibilizados por meio de motores SQL como o **Dremio**.
+Entre as plataformas open source mais relevantes nesse domínio, destaca-se o Metabase, que combina simplicidade operacional com ampla compatibilidade a bancos de dados relacionais e motores analíticos distribuídos, como Spark SQL, Trino e Dremio.
+
+Concebido como uma solução de Business Intelligence self-service, o Metabase possibilita que usuários técnicos e não técnicos construam consultas, relatórios e dashboards interativos diretamente sobre dados estruturados e semiestruturados. No escopo da pilha moderna adotada neste curso — baseada em Spark, MinIO e Delta Lake —, o Metabase atua como a camada Gold de consumo analítico, integrando-se ao Dremio para oferecer visualização consistente, segura e governada dos dados refinados.
 
 ---
 
 ## 2. Fundamentação Teórica
 
-A arquitetura Data Lakehouse surge como convergência entre os modelos de **Data Warehouse** (estruturado e governado) e **Data Lake** (flexível e escalável), incorporando controle transacional (ACID), versionamento e schema enforcement sobre **object stores**. Em termos práticos, ela permite que diferentes aplicações — analíticas ou operacionais — acessem os mesmos dados com consistência e auditabilidade. O modelo conceitual **Medallion Architecture**, proposto por *Michael Armbrust* (Databricks, 2019), define três camadas progressivas de maturação dos dados:
+A arquitetura Data Lakehouse surge como convergência entre os modelos de **Data Warehouse** (estruturado e governado) e **Data Lake** (flexível e escalável), incorporando controle transacional (ACID), versionamento e schema enforcement sobre **object stores**. Em termos práticos, ela permite que diferentes aplicações — analíticas ou operacionais — acessem os mesmos dados com consistência e auditabilidade. Como vimos anteriormente, o modelo conceitual **Medallion Architecture**, proposto por *Michael Armbrust* (Databricks, 2019), define três camadas progressivas de maturação dos dados:
 
 - **Bronze**: dados brutos, extraídos das fontes originais e preservados integralmente;
 - **Silver**: dados refinados, padronizados e normalizados;
@@ -22,7 +24,7 @@ O **Metabase** integra-se diretamente a essa terceira camada (Gold), conectando-
 
 ## 3. Arquitetura de Integração
 
-A Figura 1 apresenta a visão conceitual da integração entre os componentes principais da pilha adotada neste curso.
+A Figura 1 apresenta a visão conceitual da integração entre os componentes principais da pilha adotada em nosso curso:
 
 ```mermaid
 flowchart LR
