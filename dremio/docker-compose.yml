@@ -1,0 +1,15 @@
+version: '3.9'
+
+services:
+  dremio:
+    image: dremio/dremio-oss:latest
+    container_name: dremio
+    ports:
+      - "9047:9047"    # Web UI
+      - "31010:31010"  # JDBC/ODBC
+    environment:
+      - DREMIO_JAVA_SERVER_HEAP_MAX=4G
+      - DREMIO_JAVA_SERVER_HEAP_MIN=2G
+    volumes:
+      - ./dremio-data:/opt/dremio/data
+    restart: unless-stopped
