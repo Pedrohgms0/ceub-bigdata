@@ -239,32 +239,63 @@ Com os fundamentos teóricos consolidados, esta seção aplica os conceitos estu
 
 ```bash
 # Baixa o Delta Lake compatível com Spark 3.5.x
-RUN wget -q --no-check-certificate \
-    https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.2.0/delta-spark_2.12-3.2.0.jar \
-    -P /usr/local/spark/jars/
+RUN wget --no-check-certificate -q https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.2.1/delta-spark_2.12-3.2.1.jar -P /usr/local/spark/jars/ && \
+    wget --no-check-certificate -q https://repo1.maven.org/maven2/io/delta/delta-storage/3.2.1/delta-storage-3.2.1.jar -P /usr/local/spark/jars/
 ```
 
 Dessa forma, o pacote já estará disponível no classpath padrão do Spark. Em seguida, no notebook, a sessão Spark pode ser iniciada sem a linha `.config("spark.jars.packages", ...)`. Para validar a instalação, execute: 
 
 
 ```python
+import os
 from pyspark.sql import SparkSession
-from delta import configure_spark_with_delta_pip, DeltaTable
+from delta.tables import DeltaTable
 import importlib.metadata
 
-# Configura a sessão Spark com suporte ao Delta Lake
-builder = (
-    SparkSession.builder.appName("DeltaLakeTest")
-    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+# =====================================================
+# Versões Delta Lake
+# =====================================================
+print("Versão delta-spark (Python):", importlib.metadata.version("delta-spark"))
+
+# =====================================================
+# Configuração de ambiente para Spark + Delta 3.2.1
+# =====================================================
+os.environ["SPARK_HOME"] = "/usr/local/spark"
+os.environ["PYSPARK_SUBMIT_ARGS"] = (
+    "--jars /usr/local/spark/jars/delta-spark_2.12-3.2.1.jar,"
+    "/usr/local/spark/jars/delta-storage-3.2.1.jar pyspark-shell"
 )
 
-# Cria a sessão Spark
-spark = configure_spark_with_delta_pip(builder).getOrCreate()
+# =====================================================
+# Sessão Spark configurada para MinIO + Delta
+# =====================================================
+spark = (
+    SparkSession.builder
+    .appName("Delta-Bronze")
+    .master("local[*]")
+    .config("spark.executor.memory", "1g")
+    # Configuração S3A (MinIO)
+    .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+    .config("spark.hadoop.fs.s3a.path.style.access", "true")
+    .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "true")
+    .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000")
+    .config("spark.hadoop.fs.s3a.access.key", "minioadmin")
+    .config("spark.hadoop.fs.s3a.secret.key", "minioadmin")
+    # Integração Delta Lake
+    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+    .getOrCreate()
+)
 
-# Exibe as versões
-print("Versão do Delta Lake (biblioteca):", importlib.metadata.version("delta-spark"))
-print("Versão do Spark:")
+spark.sparkContext.setLogLevel("ERROR")
+
+# =====================================================
+# Teste da integração e S3A Handler
+# =====================================================
+spark._jsc.hadoopConfiguration().set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+fs = spark._jvm.org.apache.hadoop.fs.FileSystem.get(spark._jsc.hadoopConfiguration())
+print("Handler S3A inicializado com sucesso:", fs)
+
 spark.sql("SELECT version()").show()
 #spark.stop()
 ```
@@ -374,49 +405,64 @@ tabela_delta.history().select("version", "timestamp", "operation", "operationMet
 Esse histórico mostra as operações realizadas — por exemplo, a escrita inicial da tabela (WRITE) e versões subsequentes (UPDATE, MERGE etc.).
 
 ```python
+from pyspark.sql import Row
+from delta.tables import DeltaTable
+
+# Caminho camada Bronze
+delta_path = "s3a://datalake-bronze/f1_2022_results_delta"
+
+# =====================================================
 # Exemplo de UPDATE: corrigir pontos de um piloto específico
-spark.sql("""
-UPDATE delta.`s3a://datalake/f1_2022_delta`
+# =====================================================
+spark.sql(f"""
+UPDATE delta.`{delta_path}`
 SET points = points + 1
 WHERE driver = 'Lewis Hamilton'
 """)
 
+# =====================================================
 # Exemplo de DELETE: remover registros inválidos (posição nula)
-spark.sql("""
-DELETE FROM delta.`s3a://datalake/f1_2022_delta`
+# =====================================================
+spark.sql(f"""
+DELETE FROM delta.`{delta_path}`
 WHERE position IS NULL
 """)
 
+# =====================================================
 # Exemplo de UPSERT (MERGE): atualizar ou inserir novos resultados
-from pyspark.sql import Row
-
-# Dados simulando novas corridas
+# =====================================================
 updates = spark.createDataFrame([
-    Row(year=2022, race_name="Brazil GP", driver="Lewis Hamilton", points=25),
+    Row(year=2022, race_name="Brazil Grand Prix", driver="Lewis Hamilton", points=25),
     Row(year=2022, race_name="New Race", driver="New Driver", points=10)
 ])
 
 updates.createOrReplaceTempView("updates")
 
-spark.sql("""
-MERGE INTO delta.`s3a://datalake/f1_2022_delta` AS target
+spark.sql(f"""
+MERGE INTO delta.`{delta_path}` AS target
 USING updates AS source
 ON target.driver = source.driver AND target.race_name = source.race_name
 WHEN MATCHED THEN UPDATE SET target.points = source.points
-WHEN NOT MATCHED THEN INSERT *
+WHEN NOT MATCHED THEN INSERT (year, race_name, driver, points)
+VALUES (source.year, source.race_name, source.driver, source.points)
 """)
 
-# Consultar novamente o histórico de commits
+# =====================================================
+# Histórico de commits Delta
+# =====================================================
+tabela_delta = DeltaTable.forPath(spark, delta_path)
 tabela_delta.history().select("version", "timestamp", "operation").show(truncate=False)
 
-# Ler versão anterior e comparar
-old_df = spark.read.format("delta").option("versionAsOf", 0).load("s3a://datalake/f1_2022_delta")
+# =====================================================
+# Comparação de versões
+# =====================================================
+old_df = spark.read.format("delta").option("versionAsOf", 0).load(delta_path)
 print("Versão inicial:")
-old_df.show(5)
+old_df.show(5, truncate=False)
 
-new_df = spark.read.format("delta").load("s3a://datalake/f1_2022_delta")
+new_df = spark.read.format("delta").load(delta_path)
 print("Versão atual:")
-new_df.show(5)
+new_df.show(5, truncate=False)
 ```
 
 ### 4.3. Consultas Analíticas (Gold)
