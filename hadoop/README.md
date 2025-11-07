@@ -22,7 +22,7 @@ No cenário contemporâneo, o Hadoop sobrevive não mais como ecossistema operac
 
 Assim, compreender o Hadoop é compreender a genealogia das arquiteturas modernas de dados: o Lakehouse não o substitui, mas o sucede, herdando seus princípios e reconfigurando-os sob novas abstrações de governança, elasticidade e integração multi-engine.
 
-# 2. Transição da Pilha Hadoop à Arquitetura Lakehouse Moderna
+## 2. Transição da Pilha Hadoop à Arquitetura Lakehouse Moderna
 
 A evolução do ecossistema de Big Data pode ser compreendida como uma substituição progressiva de camadas acopladas por componentes desacoplados e interoperáveis, mantendo o mesmo propósito funcional, mas sob princípios distintos: elasticidade, independência entre computação e armazenamento e governança transacional.
 
@@ -37,6 +37,104 @@ A evolução do ecossistema de Big Data pode ser compreendida como uma substitui
 | **Motor de Consulta / Virtualização** | Pig / HBase / Impala                        | Dremio / Trino / Presto / DuckDB                                 | Engines SQL de alto desempenho com pushdown e cache distribuído. |
 | **Visualização e BI**             | *(Limitado ou ausente)*                    | Metabase / Superset / Grafana / Power BI                         | Democratiza o consumo de dados e entrega visual de indicadores. |
 
-> Essa substituição paulatina não representa uma ruptura completa, mas pode uma reengenharia evolutiva: o Hadoop estabeleceu os fundamentos técnicos que possibilitaram o surgimento das arquiteturas Lakehouse e de seus componentes interoperáveis.
+> Essa substituição paulatina não representa uma ruptura completa, mas pode uma reengenharia evolutiva: o Hadoop estabeleceu os fundamentos técnicos que possibilitaram o surgimento das arquiteturas modernas Lakehouse e de seus componentes interoperáveis.
 
-![Arquitetura Básica do Data Lake Moderno](/img/evobigdata.png)
+## 3. O Hive como Catálogo Universal de Metadados
+
+A consolidação das arquiteturas baseadas em object stores e motores de processamento desacoplados exigiu uma nova camada de integração: um catálogo de metadados persistente, capaz de descrever a estrutura lógica dos dados independentemente do mecanismo que os acessa. Nesse contexto, o Apache Hive, originalmente criado pelo Facebook em 2008 como um tradutor de consultas SQL para MapReduce, passou por uma transformação fundamental. O que sobreviveu ao declínio do Hadoop não foi o seu mecanismo de execução, mas o Hive Metastore — o serviço responsável por armazenar e disponibilizar metadados de tabelas, esquemas e partições.
+
+### 3.1. Do SQL Engine ao Metastore
+
+Na arquitetura original do Hadoop, o Hive convertia instruções SQL em jobs MapReduce, executados sobre o HDFS. Esse modelo, embora inovador à época, tornava-se lento e custoso conforme o volume de dados crescia. Com o avanço dos motores em memória (Spark, Presto, Dremio), o componente de execução do Hive perdeu relevância, mas o Metastore permaneceu essencial — funcionando como um catálogo centralizado de metadados.
+
+Hoje, o Hive Metastore é o repositório lógico que unifica a visão dos dados armazenados em sistemas distribuídos, permitindo que diferentes motores consultem as mesmas tabelas com consistência semântica. Ele não armazena dados, mas mantém o mapeamento entre o nome lógico da tabela e sua localização física, além de registrar tipos de dados, partições e estatísticas.
+
+| Função                                | Descrição                                                   |
+| ------------------------------------- | ----------------------------------------------------------- |
+| **Catálogo de Schemas**               | Registra bancos, tabelas e partições.                       |
+| **Compatibilidade Multi-Engine**      | Pode ser acessado por Spark, Dremio, Presto, Trino e Flink. |
+| **Persistência via Banco Relacional** | Armazena metadados em PostgreSQL, MySQL ou Derby.           |
+| **Interface Thrift**                  | Exposição via API padrão (`thrift://host:9083`).            |
+
+Essa separação funcional permitiu que o Hive sobrevivesse à obsolescência do Hadoop, tornando-se um componente neutro e interoperável entre ecossistemas.
+
+### 3.2. Arquitetura Moderna de Integração
+
+No contexto atual, o Hive Metastore é o elo entre armazenamento distribuído (MinIO/S3) e motores analíticos (Spark e Dremio). Ele fornece uma camada de governança e descoberta de metadados compartilhada, essencial para manter consistência entre transformações e consultas.
+
+```mermaid
+graph LR
+  subgraph Armazenamento
+    M[(MinIO / S3 / HDFS)]
+  end
+
+  subgraph Catálogo
+    H[(Hive Metastore<br>PostgreSQL Backend)]
+  end
+
+  subgraph Processamento
+    S[Spark<br>(Leitura/Escrita ACID<br>Delta Lake)]
+  end
+
+  subgraph Consumo
+    D[Dremio<br>(Virtualização e SQL Pushdown)]
+  end
+
+  S --> H
+  D --> H
+  H --> M
+```
+
+O Hive Metastore atua como uma “camada de coerência” dentro da arquitetura moderna. Ele garante que o mesmo conjunto de dados — armazenado em um object store — seja interpretado da mesma forma por diferentes mecanismos de consulta e transformação, evitando divergências entre camadas analítica e transacional. Na prática desta disciplina, o Hive será executado em contêiner próprio, com metadados persistidos em PostgreSQL. Essa configuração simula a arquitetura utilizada em ambientes corporativos, em que o catálogo serve simultaneamente:
+
+> ao Spark, que registra e consulta tabelas durante a execução de pipelines Delta Lake; e ao Dremio, que descobre automaticamente essas tabelas e as expõe para consultas SQL e visualização no Metabase.
+
+A conexão entre os componentes ocorre via serviço Thrift (`hive-metastore:9083`), enquanto o banco PostgreSQL armazena as definições lógicas (*schemas*, partições, localizações). Esse arranjo reflete um padrão de interoperabilidade comum em arquiteturas Lakehouse e ilustra a importância do Hive como componente de governança estrutural — não mais como engine de execução, mas como infraestrutura de metadados.
+
+## 4. Implementação do Hive com Spark e Dremio
+
+A arquitetura moderna de dados requer interoperabilidade entre diferentes motores de processamento e análise. Para isso, o Hive Metastore atua como o catálogo centralizado de metadados, permitindo que tabelas criadas ou atualizadas no Spark (via Delta Lake) sejam automaticamente reconhecidas por motores de consulta como o Dremio.
+
+```mermaid
+graph TD
+  subgraph Armazenamento
+    M[(MinIO<br>Object Store)]
+  end
+
+  subgraph Catálogo
+    H[(Hive Metastore<br>PostgreSQL Backend)]
+  end
+
+  subgraph Processamento
+    S[Spark<br>Delta Lake / PySpark]
+  end
+
+  subgraph Consumo
+    D[Dremio<br>SQL / BI / Data Virtualization]
+  end
+
+  S --> H
+  D --> H
+  H --> M
+  S --> M
+  D --> M
+```
+
+>O Hive Metastore fornece o elo semântico entre o armazenamento físico (MinIO) e os mecanismos lógicos de consulta e transformação. Isso garante que todos os motores compartilhem uma mesma visão de esquema, partição e localização das tabelas.
+
+Com os contêineres ativos, o Hive Metastore poderá ser verificado através da CLI do Hive ou via Spark:
+
+```bash
+docker exec -it spark spark-sql --master local \
+  --conf spark.sql.catalogImplementation=hive \
+  --conf hive.metastore.uris=thrift://hive-metastore:9083
+```
+
+No prompt, comandos como confirmam a comunicação correta entre Spark e o catálogo:
+
+```sql
+SHOW DATABASES;
+SHOW TABLES IN default;
+DESCRIBE FORMATTED minha_tabela_delta;
+```
+
