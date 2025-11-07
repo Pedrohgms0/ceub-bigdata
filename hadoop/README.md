@@ -1,6 +1,6 @@
-# Do Hadoop ao Lakehouse: O Legado do Ecossistema e a Relevância Contemporânea do Hive e do HDFS para Ecossistemas Modernos de Big Data
+# Do Hadoop ao Lakehouse: Legado e Relevância Contemporânea do Hive e do HDFS para os Ecossistemas Modernos de Big Data
 
->Antes do surgimento do Apache Spark, dos frameworks transacionais como o Delta Lake e das arquiteturas unificadas conhecidas como Data Lakehouse, o Apache Hadoop protagonizou a primeira grande revolução na engenharia de dados em larga escala. Ao adotar um modelo distribuído de processamento sobre clusters de hardware comum, redefiniu os limites do tratamento massivo de informações e inaugurou o paradigma do Big Data na década de 2010. Com o amadurecimento do ecossistema, contudo, sua complexidade operacional e o acoplamento excessivo entre componentes tornaram-se evidentes. O avanço de motores em memória, como o Spark, e a consolidação do armazenamento em object stores deslocaram o Hadoop de seu papel central. Ainda assim, dois de seus pilares — o HDFS e o Hive — mantiveram relevância técnica: o primeiro, em nichos que exigem controle físico de blocos e tolerância a falhas extremas; o segundo, como catálogo de metadados que viabiliza a interoperabilidade entre motores modernos de processamento e análise. Assim, o Hive e o HDFS não apenas resistem como heranças tecnológicas do Hadoop, mas representam a ponte conceitual entre o modelo clássico de processamento distribuído e as arquiteturas contemporâneas de dados governados.
+>Antes do surgimento do Apache Spark, dos frameworks transacionais como o Delta Lake e das arquiteturas unificadas conhecidas como Data Lakehouse, o Apache Hadoop protagonizou a primeira grande revolução na engenharia de dados em larga escala. Ao adotar um modelo distribuído de processamento sobre clusters de hardware comum, redefiniu os limites do tratamento massivo de informações e inaugurou o paradigma do Big Data a partir de meados da década de 2000. Com o amadurecimento do ecossistema, contudo, sua complexidade operacional e o acoplamento excessivo entre componentes tornaram-se evidentes. O avanço de motores em memória, como o Spark, e a consolidação do armazenamento em object stores deslocaram o Hadoop de seu papel central. Ainda assim, dois de seus pilares — o HDFS e o Hive — mantiveram relevância técnica: o primeiro, em nichos que exigem controle físico de blocos e tolerância a falhas extremas; o segundo, como catálogo de metadados que viabiliza a interoperabilidade entre motores modernos de processamento e análise. Assim, o Hive e o HDFS não apenas resistem como heranças tecnológicas do Hadoop, mas representam a ponte conceitual entre o modelo clássico de processamento distribuído e as arquiteturas contemporâneas de dados governados.
 
 ## 1. Visão Geral
 
@@ -29,46 +29,14 @@ A evolução do ecossistema de Big Data pode ser compreendida como uma substitui
 | Camada / Função Original           | Hadoop Ecosystem (2008–2015)                | Equivalentes na Arquitetura Moderna (2016–2025)                 | Observações |
 |-----------------------------------|---------------------------------------------|------------------------------------------------------------------|-------------|
 | **Armazenamento Distribuído**     | HDFS (Hadoop Distributed File System)       | Object Stores (S3, MinIO, Azure Blob)                            | Substitui replicação física por redundância em nuvem; separa armazenamento e computação. |
-| **Processamento Paralelo**        | MapReduce                                  | Apache Spark / Dask / Ray                                        | In-memory computing, APIs de alto nível e suporte a streaming. |
-| **Gerenciamento de Recursos**     | YARN                                       | Kubernetes / Docker Compose / Spark Standalone                   | Gerência elástica e isolamento de execução. |
+| **Processamento Paralelo**        | MapReduce                                  | Apache Spark / Dask / Ray                                         | In-memory computing, APIs de alto nível e suporte a streaming. |
+| **Gerenciamento de Recursos**     | YARN                                       | Kubernetes / Docker Compose                                       | Gerência, orquestração e isolamento de execução. |
 | **Consultas SQL e Metadados**     | Hive                                       | Hive Metastore / AWS Glue / Unity Catalog / Nessie               | O Hive persiste como catálogo universal, agora desacoplado do HDFS. |
-| **Ingestão e Orquestração**       | Flume / Sqoop / Oozie                      | Airflow / Kafka / Debezium / dbt                                 | Pipelines declarativos e integração com sistemas transacionais. |
+| **Ingestão e Orquestração**       | Flume / Sqoop / Oozie                      | Airflow / Kafka                                                  | Pipelines declarativos e integração com sistemas transacionais. |
 | **Armazenamento Transacional**    | *(Inexistente no modelo original)*          | Delta Lake / Apache Hudi / Apache Iceberg                        | Implementa ACID, versionamento e schema enforcement em object stores. |
 | **Motor de Consulta / Virtualização** | Pig / HBase / Impala                        | Dremio / Trino / Presto / DuckDB                                 | Engines SQL de alto desempenho com pushdown e cache distribuído. |
 | **Visualização e BI**             | *(Limitado ou ausente)*                    | Metabase / Superset / Grafana / Power BI                         | Democratiza o consumo de dados e entrega visual de indicadores. |
 
-> Essa substituição não representa uma ruptura, mas uma reengenharia evolutiva: o Hadoop estabeleceu os fundamentos técnicos que possibilitaram o surgimento das arquiteturas Lakehouse e de seus componentes interoperáveis.
+> Essa substituição paulatina não representa uma ruptura completa, mas pode uma reengenharia evolutiva: o Hadoop estabeleceu os fundamentos técnicos que possibilitaram o surgimento das arquiteturas Lakehouse e de seus componentes interoperáveis.
 
-
-<!--
-![Arquitetura Básica do Data Lake Moderno](/img/evobigdata.png) -->
-
-```mermaid
-graph LR
-    A[User Program] -->|fork| B[Master];
-    
-    %% Map Phase
-    B --> C1[Map Worker 1];
-    B --> C2[Map Worker 2];
-    C1 --> D1[Input Split 1];
-    C2 --> D2[Input Split 2];
-    D1 -->|read| E1[Map Function 1];
-    D2 -->|read| E2[Map Function 2];
-    E1 --> F1[Intermediate Local Files 1];
-    E2 --> F2[Intermediate Local Files 2];
-
-    %% Reduce Phase
-    B --> G1[Reduce Worker 1];
-    B --> G2[Reduce Worker 2];
-    G1 -->|remote read| F1;
-    G2 -->|remote read| F2;
-    F1 --> H1[Reduce Function 1];
-    F2 --> H2[Reduce Function 2];
-    H1 --> I1[Output File 1];
-    H2 --> I2[Output File 2];
-
-    %% Destaques visuais (opcional)
-    style A fill:#f9f,stroke:#333,stroke-width:3px,color:#000000
-    style I1 fill:#f9f,stroke:#333,stroke-width:3px,color:#000000
-    style I2 fill:#f9f,stroke:#333,stroke-width:3px,color:#000000
-```
+![Arquitetura Básica do Data Lake Moderno](/img/evobigdata.png)
