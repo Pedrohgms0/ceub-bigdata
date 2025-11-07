@@ -147,8 +147,127 @@ O Dremio oferece controle de acesso granular (usuários, grupos, roles), autenti
 
 ---
 
-## 7. Conclusão
+## 7. Prática com Hive e Dremio
 
-O **Dremio** consolida-se como um dos motores centrais da arquitetura **Data Lakehouse**, oferecendo uma camada SQL unificada que integra armazenamento distribuído, governança transacional e consumo analítico. Sua integração com o **Spark**, o **Delta Lake** e o **Metabase** estabelece um pipeline completo, desde a ingestão até a visualização, com base em padrões abertos e sem dependência de fornecedores.
+Com o ambiente operacional ativo e o Hive Metastore integrado, é possível verificar o fluxo completo de interoperabilidade entre o Spark (camada de processamento) e o Dremio (camada de consulta e virtualização).
 
-No contexto educacional e de pesquisa, o Dremio oferece uma plataforma robusta e transparente para o ensino de conceitos de **virtualização de dados, governança distribuída e processamento analítico sobre object stores**, permitindo que estudantes e profissionais experimentem arquiteturas de nível corporativo em ambientes de laboratório reprodutíveis.
+O objetivo desta etapa é demonstrar a unificação semântica dos metadados — isto é, a capacidade de ambos os motores interpretarem a mesma tabela Delta armazenada no MinIO, a partir das definições persistidas no Hive.
+
+O primeiro passo consiste em criar e registrar uma tabela Delta no catálogo. Dentro do contêiner Spark, execute:
+
+```bash
+docker exec -it spark pyspark \
+  --conf spark.sql.catalogImplementation=hive \
+  --conf hive.metastore.uris=thrift://hive-metastore:9083
+```
+
+Em seguida, no ambiente PySpark interativo (Jupyter):
+
+```python
+from pyspark.sql import SparkSession
+from delta.tables import DeltaTable
+
+spark = (
+    SparkSession.builder
+    .appName("HiveCatalogTest")
+    .config("spark.sql.catalogImplementation", "hive")
+    .config("hive.metastore.uris", "thrift://hive-metastore:9083")
+    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+    .getOrCreate()
+)
+
+# Caminho da tabela no MinIO
+path = "s3a://datalake/f1_2022_delta"
+
+# Criação da tabela no catálogo Hive
+spark.sql(f"""
+CREATE TABLE f1_2022_delta
+USING DELTA
+LOCATION '{path}'
+""")
+
+spark.sql("SHOW TABLES").show()
+```
+
+Esse comando registra no Hive Metastore uma referência lógica (f1_2022_delta) associada à localização física da tabela no MinIO. A partir deste ponto, o catálogo Hive passa a descrever essa estrutura, permitindo que qualquer engine conectada (Spark, Dremio, Trino, Presto) acesse o mesmo conjunto de dados com consistência.
+
+### Validação da Tabela via Spark SQL
+
+Após o registro, a tabela pode ser consultada diretamente pelo Spark SQL — sem necessidade de apontar o caminho físico.
+
+```sql
+SELECT driver, constructor, SUM(points) AS total_points
+FROM f1_2022_delta
+GROUP BY driver, constructor
+ORDER BY total_points DESC
+LIMIT 10;
+```
+
+Caso o catálogo esteja funcionando corretamente, o Spark buscará automaticamente a definição no Hive Metastore (`thrift://hive-metastore:9083`) e executará a consulta sobre os dados no MinIO. Esse comportamento confirma que o catálogo foi persistido e está acessível de forma transacional.
+
+### Verificação no Hive Metastore (CLI)
+
+Também é possível inspecionar o catálogo diretamente pela CLI do Hive (caso instalada no contêiner):
+
+```
+docker exec -it hive-metastore bash
+beeline -u jdbc:hive2://localhost:10000 -n hive
+```
+
+Dentro do prompt:
+
+```bash
+SHOW DATABASES;
+USE default;
+SHOW TABLES;
+DESCRIBE FORMATTED f1_2022_delta;
+```
+
+A saída deve conter as colunas, o formato (DELTA), e a localização física ex: `s3a://datalake/f1_2022_delta`.
+
+5.4. Descoberta Automática no Dremio
+
+Ao acessar o Dremio em http://localhost:9047
+:
+
+Vá até Sources → Hive.
+
+Verifique se o catálogo aparece conectado (thrift://hive-metastore:9083).
+
+Expanda o banco default.
+
+Localize e abra a tabela f1_2022_delta.
+
+O Dremio reconhecerá automaticamente as colunas e tipos definidos no Hive Metastore e permitirá execução de consultas SQL diretas, como:
+
+```bash
+SELECT year, driver, SUM(points) AS total_points
+FROM hive.default.f1_2022_delta
+GROUP BY year, driver
+ORDER BY total_points DESC;
+```
+
+Além disso, é possível:
+
+- Criar reflections (mecanismos de cache distribuído);
+- Integrar com o Metabase ou outras ferramentas de BI;
+- Visualizar estatísticas e tipos inferidos automaticamente.
+
+5.5. Consistência entre Engines
+
+Esse fluxo comprova a integração horizontal de metadados, princípio central das arquiteturas Lakehouse:
+
+| Etapa               | Componente       | Função                                                | Resultado                                           |
+|---------------------|------------------|-------------------------------------------------------|-----------------------------------------------------|
+| 1. Escrita          | Spark + Delta    | Criação da tabela Delta e gravação no MinIO.          | Gera `_delta_log` e arquivos Parquet.              |
+| 2. Registro         | Hive Metastore   | Associação lógica entre nome e localização física.    | Cria metadado persistente em PostgreSQL.           |
+| 3. Consulta Analítica | Dremio          | Leitura do catálogo Hive e execução SQL.              | Acesso consistente e compartilhado ao dataset.     |
+
+>Essa interoperabilidade reflete o novo paradigma de governança distribuída: o Hive Metastore atua como repositório neutro e universal, integrando engines distintas e garantindo persistência e coerência dos metadados em toda a arquitetura. 
+
+## 8. Conclusão
+
+O Dremio consolida-se como um dos motores centrais das arquiteturas Data Lakehouse, atuando como uma camada SQL unificada sobre object stores e catálogos transacionais. Ele abstrai a complexidade do armazenamento distribuído e oferece uma interface analítica de alto desempenho capaz de federar múltiplas fontes — incluindo o MinIO, o Hive Metastore e o Delta Lake — em um modelo de dados lógico, consistente e governado. Ao integrar-se diretamente ao Spark, o Dremio passa a consumir as mesmas tabelas Delta registradas no Hive, preservando consistência semântica e eliminando a necessidade de pipelines redundantes de ingestão ou modelagem. Quando conectado ao Metabase, completa-se o ciclo analítico: o Spark executa as transformações e garante as propriedades ACID; o Hive registra e compartilha os metadados; o Dremio virtualiza e otimiza as consultas SQL; e o Metabase provê visualização e disseminação dos indicadores. Esse arranjo representa, na prática, a materialização do paradigma Lakehouse — uma arquitetura unificada que combina flexibilidade operacional, governança estruturada e consumo analítico ágil sobre dados distribuídos.
+
+No contexto educacional e de pesquisa, o Dremio oferece um ambiente particularmente didático: permite compreender de forma concreta os conceitos de virtualização de dados, interoperabilidade multi-engine e governança distribuída, sem exigir infraestrutura complexa ou dependência de provedores comerciais. Em laboratório, reproduz fielmente o comportamento de plataformas corporativas de nível enterprise, tornando possível demonstrar a jornada completa do dado — da ingestão no MinIO, passando pelo processamento transacional no Spark e registro de metadados no Hive, até a consulta e visualização analítica via Dremio e Metabase. Essa implementação comprova que o Hive, longe de ser um vestígio histórico do Hadoop, mantém papel estrutural nas arquiteturas contemporâneas. Como catálogo de metadados universal, ele fornece uniformidade semântica, rastreabilidade e governança centralizada, unindo armazenamento físico (MinIO), processamento transacional (Spark + Delta) e virtualização analítica (Dremio) em um ecossistema coeso, interoperável e academicamente reprodutível. Essa persistência funcional transforma o Hive no elo conceitual e técnico entre a era do Hadoop e o paradigma moderno do Data Lakehouse.
