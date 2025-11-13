@@ -324,21 +324,28 @@ results = spark.read.option("header", True).csv("/home/jovyan/data/results.csv")
 print(f"Drivers: {drivers.count()} | Results: {results.count()}")
 ```
 
-A partir desse ponto, os dados brutos estão carregados e prontos para integração. 
+A partir desse ponto, os dados brutos estão carregados e prontos para integração. Para isso, certifique-se de ter as camadas Lakehouse estruturadas como buckets:
+
+```python
+!/usr/local/bin/mc alias set local http://minio:9000 minioadmin minioadmin
+!mc mb --ignore-existing local/datalake-bronze
+!mc mb --ignore-existing local/datalake-silver
+!mc mb --ignore-existing local/datalake-gold
+!mc mb --ignore-existing local/datalake-meta
+!mc ls local
+```
 
 ### 4.2. Transformação e Integração (Silver)
 
 Nesta etapa, criaremos uma visão integrada dos resultados da temporada 2022, unindo informações de pilotos, equipes e circuitos. Essa operação representa o refinamento dos dados — característica essencial da camada Silver.
 
 ```python
-# Cria as views temporárias
 drivers.createOrReplaceTempView("drivers")
 constructors.createOrReplaceTempView("constructors")
 races.createOrReplaceTempView("races")
 circuits.createOrReplaceTempView("circuits")
 results.createOrReplaceTempView("results")
 
-# Query SparkSQL
 query = """
 SELECT 
     ra.year,
@@ -358,7 +365,6 @@ JOIN circuits c ON c.circuitId = ra.circuitId
 WHERE ra.year = 2022
 """
 
-# Executa e mostra resultado
 df = spark.sql(query)
 df.show(20, truncate=False)
 ```
@@ -368,9 +374,7 @@ Com o dataset consolidado, salvamos o resultado no formato Delta Lake, armazenan
 
 ```python
 delta_path = "s3a://datalake-bronze/f1_2022_results_delta"
-
-f1_2022.write.format("delta").mode("overwrite").save(delta_path)
-
+df.write.format("delta").mode("overwrite").save(delta_path)
 print("Tabela Delta gravada com sucesso em s3a://datalake-bronze/f1_2022_results_delta")
 ```
 
@@ -390,9 +394,9 @@ from delta.tables import DeltaTable
 
 tabela_delta = DeltaTable.forPath(spark, delta_path)
 df_delta = tabela_delta.toDF()
-
 df_delta.show(5, truncate=False)
 print(f"Linhas totais: {df_delta.count()}")
+tabela_delta.history().select("version", "timestamp", "operation").show(truncate=False)
 ```
 
 Também é possível consultar o histórico transacional (commits registrados no `_delta_log`):

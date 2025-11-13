@@ -178,7 +178,7 @@ spark = (
 )
 
 # Caminho da tabela no MinIO
-path = "s3a://datalake/f1_2022_delta"
+path = "s3a://datalake-bronze/f1_2022_results_delta"
 
 # Criação da tabela no catálogo Hive
 spark.sql(f"""
@@ -224,7 +224,7 @@ SHOW TABLES;
 DESCRIBE FORMATTED f1_2022_delta;
 ```
 
-A saída deve conter as colunas, o formato (DELTA), e a localização física ex: `s3a://datalake/f1_2022_delta`.
+A saída deve conter as colunas, o formato (DELTA), e a localização física ex: `s3a://datalake-bronze/f1_2022_results_delta`.
 
 5.4. Descoberta Automática no Dremio
 

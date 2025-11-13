@@ -192,8 +192,8 @@ A seguir, iniciaremos a configuração prática do ambiente, utilizando contêin
 ```bash
 cd /opt/ceub-bigdata/spark
 rm Dockerfile docker-compose.yml
-wget https://raw.githubusercontent.com/klaytoncastro/idp-bigdata/refs/heads/main/spark/docker-compose.yml
-wget https://raw.githubusercontent.com/klaytoncastro/idp-bigdata/refs/heads/main/spark/Dockerfile
+wget https://raw.githubusercontent.com/klaytoncastro/ceub-bigdata/refs/heads/main/spark/docker-compose.yml
+wget https://raw.githubusercontent.com/klaytoncastro/ceub-bigdata/refs/heads/main/spark/Dockerfile
 ```
 
 Com a certeza dos arquivos atualizados, levante o ambiente:
@@ -423,7 +423,7 @@ def medir_leitura(fmt, path):
 # =====================================================
 # Escrita em diferentes formatos no MinIO
 # =====================================================
-base = "s3a://datalake/lap_times_"
+base = "s3a://datalake-bronze/lap_times_"
 formats = ["csv", "json", "parquet", "avro", "orc"]
 tempos_escrita = {}
 for fmt in formats:
