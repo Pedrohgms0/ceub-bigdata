@@ -1,31 +1,48 @@
 import streamlit as st
-
-# Título do aplicativo
-st.title("Meu Primeiro Aplicativo Streamlit")
-
-# Título da seção
-st.header("Seção 1")
-
-# Texto simples
-st.write("Este é um exemplo simples de um aplicativo Streamlit.")
-
-# Adicionando um gráfico
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Gerando alguns dados aleatórios
-data = np.random.randn(1000)
+st.set_page_config(page_title="Aplicação Completa", layout="wide")
 
-# Criando um histograma
-fig, ax = plt.subplots()
-ax.hist(data, bins=20)
+# ---------------- MENU LATERAL ----------------
+st.sidebar.title("Navegação")
+pagina = st.sidebar.selectbox(
+    "Ir para:",
+    ["Início", "Gráfico", "Componentes"]
+)
 
-# Exibindo o gráfico no Streamlit
-st.pyplot(fig)
+# ---------------- PÁGINA: INÍCIO ----------------
+if pagina == "Início":
+    st.title("Aplicação Streamlit Completa")
+    st.header("Bem-vindo")
+    st.write("Aplicação demonstrando os principais componentes e um gráfico.")
 
-# Adicionando uma opção de seleção
-option = st.selectbox("Selecione uma opção", ["Opção 1", "Opção 2", "Opção 3"])
+# ---------------- PÁGINA: GRÁFICO ----------------
+elif pagina == "Gráfico":
+    st.title("Gráfico de Histograma")
 
-# Exibindo a opção selecionada
-st.write("Você selecionou:", option)
+    # Gerando dados
+    data = np.random.randn(1000)
 
+    # Criando figura
+    fig, ax = plt.subplots()
+    ax.hist(data, bins=20, color="steelblue", edgecolor="black")
+
+    # Exibindo no Streamlit
+    st.pyplot(fig)
+
+# ---------------- PÁGINA: COMPONENTES ----------------
+elif pagina == "Componentes":
+    st.title("Demonstração de Componentes")
+
+    texto = st.text_input("Textbox")
+    opcao = st.selectbox("Selecione uma opção", ["Opção 1", "Opção 2", "Opção 3"])
+    check = st.checkbox("Ativar recurso")
+    numero = st.number_input("Valor numérico", 0, 100, 10)
+    slider = st.slider("Ajuste um nível", 0, 50, 25)
+
+    if st.button("Enviar"):
+        st.success(
+            f"Texto: {texto} | Opção: {opcao} | Check: {check} | "
+            f"Número: {numero} | Slider: {slider}"
+        )

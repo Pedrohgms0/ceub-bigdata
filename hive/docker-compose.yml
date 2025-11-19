@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+  hive-postgres:
+    image: postgres:10-alpine
+    container_name: hive-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: metastore
+    volumes:
+      - ./hive-postgres-data:/var/lib/postgresql/data
+    networks:
+      - mybridge
+    restart: unless-stopped
+
+  hive-metastore:
+    build: .
+    container_name: hive-metastore
+    depends_on:
+      - hive-postgres
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      DB_HOST: hive-postgres
+      DB_PORT: 5432
+      DB_NAME: metastore
+      DB_USER: admin
+      DB_PASSWORD: admin
+      HIVE_METASTORE_PORT: 9083
+    ports:
+      - "9083:9083"
+    volumes:
+      - ./hive-config:/opt/hive/conf
+      - ./scripts:/scripts
+    networks:
+      - mybridge
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "-c"]
+    #command: ["sleep infinity"]                # Habilite na primeira execução
+    # command: ["bash", "scripts/init-db.sh"]   # Habilite na segunda execução
+    command: ["hive", "--service", "metastore"] # Habilite na terceura execução em diante
+
+    # command: ["/bin/bash", "-c", "sleep infinity"]
+    
+
+networks:
+  mybridge:
+    external: true
